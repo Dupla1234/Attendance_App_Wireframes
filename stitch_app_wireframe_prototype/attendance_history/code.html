@@ -1,0 +1,318 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Attendance History - AttendancePro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#b4c5ff",
+                      "primary-container": "#2563eb",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-error-container": "#93000a",
+                      "surface": "#f7f9fb",
+                      "on-surface": "#191c1e",
+                      "outline-variant": "#c3c6d7",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "surface-container-high": "#e6e8ea",
+                      "inverse-on-surface": "#eff1f3",
+                      "secondary-fixed-dim": "#b9c7df",
+                      "error-container": "#ffdad6",
+                      "primary-fixed": "#dbe1ff",
+                      "on-error": "#ffffff",
+                      "on-background": "#191c1e",
+                      "surface-bright": "#f7f9fb",
+                      "surface-container-low": "#f2f4f6",
+                      "inverse-primary": "#b4c5ff",
+                      "tertiary-container": "#bc4800",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "on-secondary-fixed-variant": "#3a485b",
+                      "on-tertiary-fixed": "#360f00",
+                      "on-surface-variant": "#434655",
+                      "primary": "#004ac6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-container": "#eeefff",
+                      "on-primary": "#ffffff",
+                      "on-secondary-container": "#57657a",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "on-secondary-fixed": "#0d1c2e",
+                      "outline": "#737686",
+                      "on-tertiary-container": "#ffede6",
+                      "on-tertiary": "#ffffff",
+                      "secondary": "#515f74",
+                      "on-primary-fixed": "#00174b",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#0053db",
+                      "tertiary": "#943700",
+                      "secondary-container": "#d5e3fc",
+                      "surface-dim": "#d8dadc",
+                      "surface-variant": "#e0e3e5",
+                      "background": "#f7f9fb",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed": "#ffdbcd",
+                      "surface-container": "#eceef0",
+                      "inverse-surface": "#2d3133",
+                      "secondary-fixed": "#d5e3fc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "gutter-mobile": "12px",
+                      "sm": "12px",
+                      "md": "16px",
+                      "xs": "8px",
+                      "xl": "32px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "status-code": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-sm": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-md-mobile": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "status-code": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md-mobile": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md antialiased pb-24">
+<!-- Top App Bar -->
+<header class="bg-surface-container-lowest text-primary text-headline-sm font-headline-sm docked full-width top-0 border-b border-outline-variant flat no shadows">
+<div class="flex justify-between items-center w-full px-margin-mobile py-xs max-w-lg mx-auto">
+<button class="p-2 -ml-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-opacity duration-150 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">AttendancePro</h1>
+<button class="p-2 -mr-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-opacity duration-150 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-lg mx-auto px-margin-mobile pt-lg">
+<h2 class="text-headline-md-mobile font-headline-md-mobile text-on-surface mb-lg">Attendance History</h2>
+<!-- Date Range Filter -->
+<section class="mb-lg">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-label-caps font-label-caps text-on-surface-variant mb-base">DATE RANGE</span>
+<span class="text-body-md font-body-md text-on-surface font-medium">Jul 01 - Jul 08, 2026</span>
+</div>
+<button class="border border-outline-variant text-on-surface-variant px-sm py-xs rounded hover:bg-surface-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                    Filter
+                </button>
+</div>
+</section>
+<!-- Summary Statistics -->
+<section class="grid grid-cols-2 gap-gutter-mobile mb-xl">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm">
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-sm">TOTAL DAYS</span>
+<span class="text-display-lg font-display-lg text-on-surface block">22</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm">
+<span class="text-label-caps font-label-caps text-on-surface-variant block mb-sm">LATE ARRIVALS</span>
+<span class="text-display-lg font-display-lg text-error block">2</span>
+</div>
+</section>
+<!-- Records List -->
+<section>
+<h3 class="text-label-caps font-label-caps text-on-surface-variant mb-sm">DAILY LOGS</h3>
+<div class="space-y-sm">
+<!-- Record 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm flex flex-col gap-sm">
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Jul 08, 2026</span>
+<span class="inline-flex items-center gap-1 bg-surface-variant text-on-surface-variant px-2 py-1 rounded text-label-caps font-label-caps">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                            Within Radius
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-gutter-mobile">
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK IN</span>
+<span class="text-status-code font-status-code text-on-surface">08:55 AM</span>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK OUT</span>
+<span class="text-status-code font-status-code text-on-surface">05:05 PM</span>
+</div>
+</div>
+</div>
+<!-- Record 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm flex flex-col gap-sm">
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Jul 07, 2026</span>
+<span class="inline-flex items-center gap-1 bg-surface-variant text-on-surface-variant px-2 py-1 rounded text-label-caps font-label-caps">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                            Within Radius
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-gutter-mobile">
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK IN</span>
+<span class="text-status-code font-status-code text-on-surface">09:00 AM</span>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK OUT</span>
+<span class="text-status-code font-status-code text-on-surface">05:00 PM</span>
+</div>
+</div>
+</div>
+<!-- Record 3 (Late) -->
+<div class="bg-surface-container-lowest border border-error-container rounded-lg p-md shadow-sm flex flex-col gap-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs pl-2">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Jul 06, 2026</span>
+<span class="inline-flex items-center gap-1 bg-error-container text-on-error-container px-2 py-1 rounded text-label-caps font-label-caps">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                            Late
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-gutter-mobile pl-2">
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK IN</span>
+<span class="text-status-code font-status-code text-error font-medium">09:15 AM</span>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK OUT</span>
+<span class="text-status-code font-status-code text-on-surface">05:30 PM</span>
+</div>
+</div>
+</div>
+<!-- Record 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm flex flex-col gap-sm">
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Jul 05, 2026</span>
+<span class="inline-flex items-center gap-1 bg-surface-variant text-on-surface-variant px-2 py-1 rounded text-label-caps font-label-caps">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                            Within Radius
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-gutter-mobile">
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK IN</span>
+<span class="text-status-code font-status-code text-on-surface">08:50 AM</span>
+</div>
+<div>
+<span class="text-label-caps font-label-caps text-outline block mb-base">CLOCK OUT</span>
+<span class="text-status-code font-status-code text-on-surface">05:02 PM</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="bg-surface-container-lowest text-primary text-label-caps font-label-caps fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant shadow-sm md:hidden">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 max-w-lg mx-auto right-0">
+<!-- Dashboard -->
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant py-1 hover:bg-secondary-container rounded px-4 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</button>
+<!-- History (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="">History</span>
+</button>
+<!-- Profile -->
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant py-1 hover:bg-secondary-container rounded px-4 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="">Profile</span>
+</button>
+</div>
+</nav>
+
+
+</body></html>

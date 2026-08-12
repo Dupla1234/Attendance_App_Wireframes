@@ -1,0 +1,262 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Employee Profile - AttendancePro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-tint": "#0053db",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container": "#eceef0",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#57657a",
+                        "tertiary-fixed": "#ffdbcd",
+                        "surface-variant": "#e0e3e5",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#b4c5ff",
+                        "on-surface-variant": "#434655",
+                        "outline": "#737686",
+                        "on-surface": "#191c1e",
+                        "secondary": "#515f74",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-tertiary-container": "#ffede6",
+                        "primary": "#004ac6",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f7f9fb",
+                        "inverse-surface": "#2d3133",
+                        "inverse-on-surface": "#eff1f3",
+                        "background": "#f7f9fb",
+                        "secondary-container": "#d5e3fc",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dadc",
+                        "primary-container": "#2563eb",
+                        "tertiary-container": "#bc4800",
+                        "surface": "#f7f9fb",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#360f00",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#943700",
+                        "on-background": "#191c1e"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "margin-mobile": "16px",
+                        "lg": "24px",
+                        "xs": "8px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "base": "4px",
+                        "gutter-mobile": "12px",
+                        "sm": "12px"
+                    },
+                    fontFamily: {
+                        "headline-md-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "status-code": ["JetBrains Mono"]
+                    },
+                    fontSize: {
+                        "headline-md-mobile": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "status-code": ["13px", { lineHeight: "18px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest text-primary text-headline-sm font-headline-sm docked full-width top-0 border-b border-outline-variant flat no shadows">
+<div class="flex justify-between items-center w-full px-margin-mobile py-xs max-w-lg mx-auto">
+<button class="p-2 -ml-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-opacity duration-150 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">AttendancePro</h1>
+<button class="p-2 -mr-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-opacity duration-150 active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Web Top Nav (Hidden on Mobile) -->
+<nav class="hidden md:flex bg-surface-container-lowest border-b border-outline-variant shadow-sm w-full px-8 py-4 justify-between items-center z-50">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl">location_on</span>
+<span class="font-headline-md text-headline-md font-bold">AttendancePro</span>
+</div>
+<div class="flex gap-8 items-center">
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span> Dashboard</a>
+<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors flex items-center gap-1" href="#"><span class="material-symbols-outlined text-[18px]">history</span> History</a>
+<a class="text-primary font-bold font-label-caps text-label-caps border-b-2 border-primary pb-1 flex items-center gap-1" href="#"><span class="material-symbols-outlined fill text-[18px]">person</span> Profile</a>
+<button class="text-on-surface-variant hover:text-primary transition-colors ml-4"><span class="material-symbols-outlined">notifications</span></button>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-grow w-full max-w-lg mx-auto px-margin-mobile pt-lg md:max-w-4xl md:pt-xl">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center mb-xl text-center"><div class="w-24 h-24 rounded-full bg-surface-container-high border-2 border-outline-variant mb-4 overflow-hidden shadow-sm flex items-center justify-center relative group cursor-pointer">
+<span class="material-symbols-outlined text-4xl text-outline group-hover:hidden">person</span>
+<img alt="Profile Picture" class="w-full h-full object-cover hidden group-hover:block" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkrTPxRL2OWN9rpctxiPY4Su-EOhKDT8v943xzhUzsMBtiTbohP-PehTW0cHnD6_bJrK6tXGWUD_VME4LGaDQgI8flAceE4rLnQWXGMc9_Q6PJH_RU-nCXxQWXPHGSiHimKfXniqViwPH1kEk87vw-UELjvYJZVlpsoIqY9R-qkn22QzOLsw33xRksWe_z6O3JlStTBodUrnhKDTe8cjDGs5TmUjW1a-PBb2GptZQIUxNUt8NUD12anwLHB_j3yDWD2VPPBeF9rp339TU">
+<div class="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center">
+<span class="material-symbols-outlined text-white">edit</span>
+</div>
+</div>
+<h2 class="text-headline-md-mobile font-headline-md-mobile text-on-surface">Success Mdhluli</h2>
+<p class="text-label-caps font-label-caps text-secondary mt-1">EMP-8472-A</p></section>
+<!-- Bento Grid Layout for Profile Details -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-lg">
+<!-- Work Info Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm">
+<h3 class="text-label-caps font-label-caps text-on-surface-variant mb-sm uppercase tracking-wider flex items-center gap-2 border-b border-surface-variant pb-2">
+<span class="material-symbols-outlined text-[16px]">work</span> Assignment
+</h3>
+<div class="space-y-sm mt-md">
+<div>
+<p class="text-label-caps font-label-caps text-outline block mb-base">Assigned Branch</p>
+<p class="text-body-md font-body-md text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+Downtown Main Office
+</p>
+</div>
+<div>
+<p class="text-label-caps font-label-caps text-outline block mb-base">Department</p>
+<p class="text-body-md font-body-md text-on-surface">ICT</p>
+</div>
+<div>
+<p class="text-label-caps font-label-caps text-outline block mb-base">Manager</p>
+<p class="text-body-md font-body-md text-on-surface">Riaan Cornelissen</p>
+</div>
+</div>
+</div>
+<!-- Stats/Status Card -->
+<div class="bg-primary-container text-on-primary-container border border-primary-fixed-dim rounded-lg p-md shadow-sm flex flex-col justify-center">
+<h3 class="text-label-caps font-label-caps mb-sm uppercase tracking-wider flex items-center gap-2 opacity-80 border-b border-primary-fixed-dim pb-2">
+<span class="material-symbols-outlined text-[16px]">verified</span> Current Status
+</h3>
+<div class="mt-md">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-4xl fill text-on-primary-container">how_to_reg</span>
+<div>
+<p class="text-headline-sm font-headline-sm">Clocked In</p>
+<p class="text-body-md font-body-md opacity-90">Since 08:45 AM Today</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Settings List -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden mb-xl">
+<div class="px-md py-sm bg-surface-container-low border-b border-outline-variant">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Account &amp; Settings</h3>
+</div>
+<ul class="divide-y divide-outline-variant">
+<li class="">
+<button class="w-full flex items-center justify-between px-md py-sm hover:bg-surface-variant transition-colors text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">manage_accounts</span>
+<span class="font-body-md text-on-surface">Personal Information</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</button>
+</li>
+<li class="">
+<button class="w-full flex items-center justify-between px-md py-sm hover:bg-surface-variant transition-colors text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">security</span>
+<span class="font-body-md text-on-surface">Security &amp; Password</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</button>
+</li>
+<li class="">
+<button class="w-full flex items-center justify-between px-md py-sm hover:bg-surface-variant transition-colors text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">my_location</span>
+<span class="font-body-md text-on-surface">Location Permissions</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</button>
+</li>
+<li class="">
+<button class="w-full flex items-center justify-between px-md py-sm hover:bg-error-container text-error transition-colors text-left">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md font-medium">Log Out</span>
+</div>
+</button>
+</li>
+</ul>
+</section>
+<div class="text-center text-secondary font-status-code text-status-code mb-xl">
+            App Version 1.2.4 (Build 890)
+        </div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-lowest text-primary text-label-caps font-label-caps fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant shadow-sm md:hidden">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 max-w-lg mx-auto right-0">
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant py-1 hover:bg-secondary-container rounded px-4 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-secondary-fixed-variant py-1 hover:bg-secondary-container rounded px-4 transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="">History</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined mb-1" data-icon="person" style="font-variation-settings: &quot;FILL&quot; 1;">person</span>
+<span class="">Profile</span>
+</button>
+</div>
+</nav>
+
+
+</body></html>
