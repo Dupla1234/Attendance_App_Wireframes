@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Attendance History</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">📍</div>
+            <div class="brand-name">AttendancePro</div>
+          </div>
+          <div class="topbar-meta">
+            <div class="topbar-time" id="header-time">--:--</div>
+            <div>Current Time</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout container">
+        <aside class="sidebar">
+          <h2>AttendanceAdmin</h2>
+          <p class="sidebar-subtitle">Employee Portal</p>
+          <nav class="nav-list">
+            <a class="nav-item" href="dashboard.html">Dashboard</a>
+            <a class="nav-item active" href="attendance-history.html">Attendance History</a>
+            <a class="nav-item" href="profile.html">Profile</a>
+          </nav>
+        </aside>
+
+        <main class="page">
+          <div class="page-header">
+            <div>
+              <h1>Attendance History</h1>
+              <p>Recent attendance records</p>
+            </div>
+            <button class="primary-btn">Export</button>
+          </div>
+
+          <section class="panel">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2026-09-02</td>
+                  <td>08:58 AM</td>
+                  <td>05:12 PM</td>
+                  <td><span class="badge success">Present</span></td>
+                </tr>
+                <tr>
+                  <td>2026-09-01</td>
+                  <td>09:13 AM</td>
+                  <td>05:02 PM</td>
+                  <td><span class="badge warning">Late</span></td>
+                </tr>
+                <tr>
+                  <td>2026-08-31</td>
+                  <td>08:55 AM</td>
+                  <td>05:05 PM</td>
+                  <td><span class="badge success">Present</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

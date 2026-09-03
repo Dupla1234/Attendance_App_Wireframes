@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Dashboard</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">📍</div>
+            <div class="brand-name">AttendancePro</div>
+          </div>
+
+          <div class="topbar-meta">
+            <div id="header-time" class="topbar-time">--:--</div>
+            <div>Current Time</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout container">
+        <aside class="sidebar">
+          <h2>AttendanceAdmin</h2>
+          <p class="sidebar-subtitle">Employee Portal</p>
+
+          <nav class="nav-list">
+            <a class="nav-item active" href="dashboard.html">Dashboard</a>
+            <a class="nav-item" href="attendance-history.html">Attendance History</a>
+            <a class="nav-item" href="profile.html">Profile</a>
+          </nav>
+
+          <div class="profile-chip">
+            <img class="avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80" alt="User avatar" />
+            <div>
+              <strong>Jane Smith</strong><br />
+              <small>jane@company.com</small>
+            </div>
+          </div>
+        </aside>
+
+        <main class="page">
+          <div class="page-header">
+            <div>
+              <h1>Dashboard</h1>
+              <p>Track attendance and location status</p>
+            </div>
+            <button class="secondary-btn">View Report</button>
+          </div>
+
+          <div class="dashboard-hero">
+            <section class="hero-panel">
+              <span class="status-pill success"><span class="status-dot"></span> GPS Status</span>
+              <h2>HQ - Centurion</h2>
+              <strong>In-Bounds</strong>
+              <p>1293 South Street Maxi Building</p>
+            </section>
+
+            <section class="info-card transparent-panel">
+              <div class="stat-label">Shift Start</div>
+              <div class="stat-value">09:00 AM</div>
+              <div class="status-pill warning"><span class="status-dot"></span> Expected</div>
+            </section>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="panel">
+              <div class="stat-label">Current Time</div>
+              <div class="stat-value" id="current-time">--:--</div>
+              <p>Tap to record your attendance</p>
+            </div>
+
+            <div class="panel">
+              <div class="stat-label">Hours Today</div>
+              <div class="stat-value">0h 0m</div>
+              <div class="status-pill success"><span class="status-dot"></span> On track</div>
+            </div>
+          </div>
+
+          <div style="margin-top:24px; display:grid; place-items:center;">
+            <button id="clock-button" class="clock-button" type="button">
+              <div>
+                <div class="icon">✓</div>
+                <div class="label">CLOCK IN</div>
+                <div class="sub">Tap to record your start time</div>
+              </div>
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Offline State</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">📍</div>
+            <div class="brand-name">AttendancePro</div>
+          </div>
+          <div class="topbar-meta">
+            <div class="topbar-time" id="header-time">--:--</div>
+            <div>Current Time</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout container">
+        <aside class="sidebar">
+          <h2>AttendanceAdmin</h2>
+          <p class="sidebar-subtitle">Employee Portal</p>
+          <nav class="nav-list">
+            <a class="nav-item" href="dashboard.html">Dashboard</a>
+            <a class="nav-item" href="attendance-history.html">Attendance History</a>
+            <a class="nav-item" href="profile.html">Profile</a>
+          </nav>
+        </aside>
+
+        <main class="page">
+          <div class="page-header">
+            <div>
+              <h1>Offline Mode</h1>
+              <p>Your device is temporarily disconnected</p>
+            </div>
+            <button class="secondary-btn">Retry Sync</button>
+          </div>
+
+          <section class="panel" style="text-align:center; padding: 36px 24px;">
+            <div style="font-size: 3rem; margin-bottom: 12px;">📶</div>
+            <h2 style="margin:0 0 12px;">Connection lost</h2>
+            <p style="margin:0 0 22px; color: var(--text-muted);">
+              Attendance updates will sync automatically once the connection is restored.
+            </p>
+            <span class="status-pill warning"><span class="status-dot"></span> Offline</span>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

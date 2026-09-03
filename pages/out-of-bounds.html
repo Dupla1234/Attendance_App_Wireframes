@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Out of Bounds</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">📍</div>
+            <div class="brand-name">AttendancePro</div>
+          </div>
+          <div class="topbar-meta">
+            <div class="topbar-time" id="header-time">--:--</div>
+            <div>Current Time</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout container">
+        <aside class="sidebar">
+          <h2>AttendanceAdmin</h2>
+          <p class="sidebar-subtitle">Employee Portal</p>
+          <nav class="nav-list">
+            <a class="nav-item" href="dashboard.html">Dashboard</a>
+            <a class="nav-item" href="attendance-history.html">Attendance History</a>
+            <a class="nav-item" href="profile.html">Profile</a>
+          </nav>
+        </aside>
+
+        <main class="page">
+          <div class="page-header">
+            <div>
+              <h1>Geofence Alert</h1>
+              <p>You are outside the assigned branch radius</p>
+            </div>
+            <button class="secondary-btn">Refresh Location</button>
+          </div>
+
+          <section class="panel" style="text-align:center; padding: 36px 24px;">
+            <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+            <h2 style="margin:0 0 12px;">Out of Bounds</h2>
+            <p style="margin:0 0 22px; color: var(--text-muted);">
+              You must be within the branch radius to check in or clock out.
+            </p>
+            <span class="status-pill danger"><span class="status-dot"></span> Out of Bounds</span>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

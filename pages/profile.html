@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Profile</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">📍</div>
+            <div class="brand-name">AttendancePro</div>
+          </div>
+          <div class="topbar-meta">
+            <div id="header-time" class="topbar-time">--:--</div>
+            <div>Current Time</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="layout container">
+        <aside class="sidebar">
+          <h2>AttendanceAdmin</h2>
+          <p class="sidebar-subtitle">Employee Portal</p>
+          <nav class="nav-list">
+            <a class="nav-item" href="dashboard.html">Dashboard</a>
+            <a class="nav-item" href="attendance-history.html">Attendance History</a>
+            <a class="nav-item active" href="profile.html">Profile</a>
+          </nav>
+        </aside>
+
+        <main class="page">
+          <div class="page-header">
+            <div>
+              <h1>Profile</h1>
+              <p>Manage your employee details</p>
+            </div>
+            <button class="primary-btn">Save Changes</button>
+          </div>
+
+          <section class="panel">
+            <div class="form">
+              <div class="field">
+                <label for="full-name">Full Name</label>
+                <input class="input" id="full-name" type="text" value="Jane Smith" />
+              </div>
+              <div class="field">
+                <label for="employee-number">Employee ID</label>
+                <input class="input" id="employee-number" type="text" value="EMP-1024" />
+              </div>
+              <div class="field">
+                <label for="branch">Assigned Branch</label>
+                <input class="input" id="branch" type="text" value="HQ - Centurion" />
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

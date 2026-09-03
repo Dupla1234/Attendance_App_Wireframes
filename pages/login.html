@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Login</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="logo-block">
+          <div class="logo-mark">📍</div>
+          <h1>AttendancePro</h1>
+          <p>Employee Portal</p>
+        </div>
+
+        <form id="login-form" class="form">
+          <div class="field">
+            <label for="employee-id">Employee ID</label>
+            <input class="input" id="employee-id" type="text" placeholder="EMP-0000" required />
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" id="password" type="password" placeholder="••••••••" required />
+          </div>
+
+          <div class="form-row">
+            <label class="checkbox">
+              <input type="checkbox" />
+              <span>Remember me</span>
+            </label>
+            <a href="#">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="primary-btn">Sign In</button>
+        </form>
+
+        <div class="auth-note">
+          Secure access requires location permissions.<br />
+          Contact HR for access issues.
+        </div>
+      </div>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

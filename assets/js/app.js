@@ -1,0 +1,65 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const timeEl = document.getElementById('current-time');
+  const headerTimeEl = document.getElementById('header-time');
+
+  const updateClock = () => {
+    const now = new Date();
+    const label = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (timeEl) timeEl.textContent = label;
+    if (headerTimeEl) headerTimeEl.textContent = label;
+  };
+
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      window.location.href = 'dashboard.html';
+    });
+  }
+
+  const clockButton = document.getElementById('clock-button');
+  if (clockButton) {
+    clockButton.addEventListener('click', () => {
+      const isClocked = clockButton.classList.toggle('clocked');
+      const label = clockButton.querySelector('.label');
+      if (label) {
+        label.textContent = isClocked ? 'CLOCKED IN' : 'CLOCK IN';
+      }
+      const sub = clockButton.querySelector('.sub');
+      if (sub) {
+        sub.textContent = isClocked ? 'Shift active' : 'Tap to record your start time';
+      }
+    });
+  }
+
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      navItems.forEach((n) => n.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  const modal = document.getElementById('employee-modal');
+  const openModalButton = document.getElementById('open-modal');
+  const closeModalButton = document.getElementById('close-modal');
+
+  if (modal && openModalButton) {
+    openModalButton.addEventListener('click', () => modal.classList.remove('hidden'));
+  }
+
+  if (modal && closeModalButton) {
+    closeModalButton.addEventListener('click', () => modal.classList.add('hidden'));
+  }
+
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.classList.add('hidden');
+      }
+    });
+  }
+});
