@@ -460,6 +460,22 @@ button, input {
   text-align: center;
 }
 
+.demo-credentials {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.demo-credentials strong {
+  color: var(--text);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

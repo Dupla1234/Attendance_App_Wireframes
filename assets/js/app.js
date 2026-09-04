@@ -2,7 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const pendingCheckInKey = 'attendancePro.pendingCheckIn';
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
   const currentRoleKey = 'attendancePro.currentRole';
+  const currentUserKey = 'attendancePro.currentUser';
   const usersKey = 'attendancePro.users';
+  const defaultUsers = [
+    { name: 'Demo Employee', id: 'EMP-1001', password: 'Employee@123', email: 'employee@demo.com', branch: 'HQ - Centurion', role: 'employee', rights: ['dashboard', 'history', 'profile'] },
+    { name: 'Demo Administrator', id: 'ADMIN-0001', password: 'Admin@123', email: 'admin@demo.com', branch: 'All branches', role: 'admin', rights: ['dashboard', 'history', 'profile', 'reports', 'employees'] }
+  ];
 
   const readHistory = () => JSON.parse(localStorage.getItem(attendanceHistoryKey) || '[]');
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
@@ -42,8 +47,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
       const employeeId = document.getElementById('employee-id').value.trim().toUpperCase();
-      const role = employeeId.startsWith('ADMIN') ? 'admin' : 'employee';
+      const password = document.getElementById('password').value;
+      const loginFeedback = document.getElementById('login-feedback');
+      const account = defaultUsers.find((user) => user.id === employeeId && user.password === password);
+
+      if (!account) {
+        if (loginFeedback) loginFeedback.textContent = 'Invalid demo credentials. Check the ID and password and try again.';
+        return;
+      }
+
+      const role = account.role;
       localStorage.setItem(currentRoleKey, role);
+      localStorage.setItem(currentUserKey, JSON.stringify({ name: account.name, id: account.id, email: account.email, role: account.role }));
       window.location.href = role === 'admin' ? 'admin-monitoring.html' : 'dashboard.html';
     });
   }
@@ -51,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-logout]').forEach((logoutLink) => {
     logoutLink.addEventListener('click', () => {
       localStorage.removeItem(currentRoleKey);
+      localStorage.removeItem(currentUserKey);
     });
   });
 
