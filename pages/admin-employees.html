@@ -7,7 +7,31 @@
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body>
-    <main class="page index-page"><div class="page-header"><div><h1>Employee Management</h1><p>Manage employee records</p></div><nav class="page-links page-links-inline"><a href="admin-monitoring.html">Overview</a><a href="admin-branches.html">Branches</a><a href="admin-reports.html">Reports</a><a class="secondary-btn" href="../index.html">All pages</a><a class="secondary-btn" href="login.html" data-logout>Sign out</a></nav></div><section class="panel"><table class="table"><thead><tr><th>Name</th><th>Employee ID</th><th>Branch</th><th>Status</th></tr></thead><tbody><tr><td>Jane Smith</td><td>EMP-1024</td><td>HQ - Centurion</td><td><span class="badge success">Active</span></td></tr><tr><td>David Johnson</td><td>EMP-3052</td><td>North Ridge</td><td><span class="badge warning">Late</span></td></tr></tbody></table></section></main>
+    <main class="page index-page">
+      <div class="page-header">
+        <div><h1>Employee Management</h1><p>Create users and control their access rights</p></div>
+        <nav class="page-links page-links-inline">
+          <a href="admin-monitoring.html">Overview</a><a href="admin-branches.html">Branches</a><a href="admin-reports.html">Reports</a>
+          <a class="secondary-btn" href="../index.html">All pages</a><a class="secondary-btn" href="login.html" data-logout>Sign out</a>
+        </nav>
+      </div>
+
+      <section class="panel user-form-panel">
+        <div class="section-heading"><div><h2>Create User</h2><p>Assign a role and the screens this user may access.</p></div></div>
+        <form id="create-user-form" class="user-form">
+          <div class="field"><label for="user-name">Full Name</label><input class="input" id="user-name" required placeholder="Employee full name" /></div>
+          <div class="field"><label for="user-id">Employee ID</label><input class="input" id="user-id" required placeholder="EMP-0000" /></div>
+          <div class="field"><label for="user-email">Email</label><input class="input" id="user-email" type="email" required placeholder="name@company.com" /></div>
+          <div class="field"><label for="user-branch">Branch</label><select class="input" id="user-branch"><option>HQ - Centurion</option><option>North Ridge</option><option>West End</option></select></div>
+          <div class="field"><label for="user-role">Role</label><select class="input" id="user-role"><option value="employee">Employee</option><option value="admin">Administrator</option></select></div>
+          <fieldset class="rights-fieldset"><legend>Access rights</legend><label class="checkbox"><input type="checkbox" name="rights" value="dashboard" checked /> Dashboard</label><label class="checkbox"><input type="checkbox" name="rights" value="history" checked /> Attendance history</label><label class="checkbox"><input type="checkbox" name="rights" value="profile" checked /> Profile</label><label class="checkbox"><input type="checkbox" name="rights" value="reports" /> Reports</label><label class="checkbox"><input type="checkbox" name="rights" value="employees" /> Employee management</label></fieldset>
+          <button class="primary-btn" type="submit">Create User</button>
+        </form>
+        <p class="form-feedback" id="user-form-feedback" aria-live="polite"></p>
+      </section>
+
+      <section class="panel" style="margin-top:24px"><div class="section-heading"><div><h2>Users and rights</h2><p>Stored locally for this prototype.</p></div></div><div class="table-scroll"><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Branch</th><th>Role</th><th>Rights</th><th>Action</th></tr></thead><tbody id="user-records"><tr><td>Jane Smith</td><td>EMP-1024</td><td>HQ - Centurion</td><td><span class="badge success">Employee</span></td><td>Dashboard, History, Profile</td><td>Demo user</td></tr><tr><td>David Johnson</td><td>EMP-3052</td><td>North Ridge</td><td><span class="badge success">Employee</span></td><td>Dashboard, History, Profile</td><td>Demo user</td></tr></tbody></table></div></section>
+    </main>
   </body>
   <script src="../assets/js/app.js"></script>
 </html>

@@ -2,9 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const pendingCheckInKey = 'attendancePro.pendingCheckIn';
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
   const currentRoleKey = 'attendancePro.currentRole';
+  const usersKey = 'attendancePro.users';
 
   const readHistory = () => JSON.parse(localStorage.getItem(attendanceHistoryKey) || '[]');
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
+  const readUsers = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
+  const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
 
   const path = window.location.pathname.toLowerCase();
   const isAdminPage = path.includes('admin-');
@@ -214,6 +217,54 @@ document.addEventListener('DOMContentLoaded', () => {
         branch: document.getElementById('branch').value
       }));
       profileFeedback.textContent = 'Profile changes saved on this device.';
+    });
+  }
+
+  const createUserForm = document.getElementById('create-user-form');
+  const userRecords = document.getElementById('user-records');
+  const userFormFeedback = document.getElementById('user-form-feedback');
+  if (createUserForm && userRecords && userFormFeedback) {
+    const renderUsers = () => {
+      readUsers().forEach((user) => {
+        const row = document.createElement('tr');
+        row.dataset.userId = user.id;
+        row.innerHTML = `<td>${user.name}</td><td>${user.id}</td><td>${user.branch}</td><td><span class="badge ${user.role === 'admin' ? 'warning' : 'success'}">${user.role}</span></td><td>${user.rights.join(', ') || 'No rights assigned'}</td><td><button class="ghost-btn" type="button" data-remove-user="${user.id}">Remove</button></td>`;
+        userRecords.appendChild(row);
+      });
+    };
+
+    renderUsers();
+    createUserForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const user = {
+        name: document.getElementById('user-name').value.trim(),
+        id: document.getElementById('user-id').value.trim().toUpperCase(),
+        email: document.getElementById('user-email').value.trim(),
+        branch: document.getElementById('user-branch').value,
+        role: document.getElementById('user-role').value,
+        rights: [...document.querySelectorAll('input[name="rights"]:checked')].map((right) => right.value)
+      };
+      const users = readUsers();
+      if (users.some((existingUser) => existingUser.id === user.id)) {
+        userFormFeedback.textContent = 'That employee ID already exists.';
+        return;
+      }
+      saveUsers([...users, user]);
+      const row = document.createElement('tr');
+      row.dataset.userId = user.id;
+      row.innerHTML = `<td>${user.name}</td><td>${user.id}</td><td>${user.branch}</td><td><span class="badge ${user.role === 'admin' ? 'warning' : 'success'}">${user.role}</span></td><td>${user.rights.join(', ') || 'No rights assigned'}</td><td><button class="ghost-btn" type="button" data-remove-user="${user.id}">Remove</button></td>`;
+      userRecords.appendChild(row);
+      createUserForm.reset();
+      userFormFeedback.textContent = `${user.name} was created with ${user.rights.length} access right(s).`;
+    });
+
+    userRecords.addEventListener('click', (event) => {
+      const removeButton = event.target.closest('[data-remove-user]');
+      if (!removeButton) return;
+      const id = removeButton.dataset.removeUser;
+      saveUsers(readUsers().filter((user) => user.id !== id));
+      removeButton.closest('tr').remove();
+      userFormFeedback.textContent = `${id} was removed.`;
     });
   }
 });
