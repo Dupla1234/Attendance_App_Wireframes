@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         name: document.getElementById('user-name').value.trim(),
         id: document.getElementById('user-id').value.trim().toUpperCase(),
         email: document.getElementById('user-email').value.trim(),
+        password: document.getElementById('user-password').value,
         branch: document.getElementById('user-branch').value,
         role: document.getElementById('user-role').value,
         rights: [...document.querySelectorAll('input[name="rights"]:checked')].map((right) => right.value)
