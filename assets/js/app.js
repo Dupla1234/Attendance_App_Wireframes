@@ -42,24 +42,4 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.add('active');
     });
   });
-
-  const modal = document.getElementById('employee-modal');
-  const openModalButton = document.getElementById('open-modal');
-  const closeModalButton = document.getElementById('close-modal');
-
-  if (modal && openModalButton) {
-    openModalButton.addEventListener('click', () => modal.classList.remove('hidden'));
-  }
-
-  if (modal && closeModalButton) {
-    closeModalButton.addEventListener('click', () => modal.classList.add('hidden'));
-  }
-
-  if (modal) {
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        modal.classList.add('hidden');
-      }
-    });
-  }
 });

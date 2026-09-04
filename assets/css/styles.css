@@ -503,36 +503,6 @@ button, input {
   color: var(--danger);
 }
 
-.hidden {
-  display: none !important;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.46);
-  display: grid;
-  place-items: center;
-  z-index: 99;
-}
-
-.modal-card {
-  width: min(100%, 480px);
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
