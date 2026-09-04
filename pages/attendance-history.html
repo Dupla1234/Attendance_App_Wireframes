@@ -38,7 +38,7 @@
               <h1>Attendance History</h1>
               <p>Recent attendance records</p>
             </div>
-            <button class="primary-btn">Export</button>
+            <button class="primary-btn" type="button" data-export-history>Export</button>
           </div>
 
           <section class="panel">
@@ -51,7 +51,7 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="attendance-records">
                 <tr>
                   <td>2026-09-02</td>
                   <td>08:58 AM</td>
@@ -72,6 +72,7 @@
                 </tr>
               </tbody>
             </table>
+            <p class="state-feedback" data-history-feedback aria-live="polite"></p>
           </section>
         </main>
       </div>

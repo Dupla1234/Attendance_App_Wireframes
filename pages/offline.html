@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Offline Mode</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="state-page">
+      <main class="state-card">
+        <div class="state-icon state-icon-warning">!</div>
+        <span class="status-pill warning"><span class="status-dot"></span> Offline mode</span>
+        <h1>Offline check-in</h1>
+        <p>Your check-in is stored on this device with its exact time and the best location available. It will be checked when internet access returns.</p>
+        <section class="offline-record" data-offline-record>
+          <div class="offline-record-header">
+            <strong>Queued check-in</strong>
+            <span class="badge warning" data-queue-status>Waiting to sync</span>
+          </div>
+          <dl class="record-grid">
+            <div><dt>Time captured</dt><dd data-record-time>Not captured</dd></div>
+            <div><dt>Location</dt><dd data-record-location>Waiting for GPS</dd></div>
+            <div><dt>Branch radius</dt><dd>50m</dd></div>
+            <div><dt>Verification</dt><dd data-record-verification>Pending internet access</dd></div>
+          </dl>
+        </section>
+        <div class="state-actions">
+          <a class="primary-btn" href="dashboard.html">Return to dashboard</a>
+          <button class="secondary-btn" type="button" data-confirm-checkin>Confirm when online</button>
+        </div>
+        <p class="state-feedback" data-connection-feedback aria-live="polite"></p>
+      </main>
+    </div>
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>

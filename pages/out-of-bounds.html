@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendancePro | Outside Branch Radius</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="state-page">
+      <main class="state-card">
+        <div class="state-icon state-icon-danger">!</div>
+        <span class="status-pill danger"><span class="status-dot"></span> Outside branch radius</span>
+        <h1>Clock-in unavailable</h1>
+        <p>Your current location is outside the approved radius for HQ - Centurion.</p>
+        <div class="location-detail">
+          <div><span>Required radius</span><strong>50m</strong></div>
+          <div><span>Location status</span><strong>Out of bounds</strong></div>
+        </div>
+        <div class="state-actions">
+          <a class="primary-btn" href="dashboard.html">Return to dashboard</a>
+          <button class="secondary-btn" type="button" data-refresh-location>Refresh location</button>
+        </div>
+          <p class="state-feedback" data-location-feedback aria-live="polite"></p>
+      </main>
+    </div>
+    <script src="../assets/js/app.js"></script>
+  </body>
+</html>
