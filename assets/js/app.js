@@ -42,8 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
       const employeeId = document.getElementById('employee-id').value.trim().toUpperCase();
-      const selectedRole = document.getElementById('role').value;
-      const role = employeeId.startsWith('ADMIN') ? 'admin' : selectedRole;
+      const role = employeeId.startsWith('ADMIN') ? 'admin' : 'employee';
       localStorage.setItem(currentRoleKey, role);
       window.location.href = role === 'admin' ? 'admin-monitoring.html' : 'dashboard.html';
     });
