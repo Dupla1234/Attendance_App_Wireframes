@@ -1,9 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
   const pendingCheckInKey = 'attendancePro.pendingCheckIn';
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
+  const currentRoleKey = 'attendancePro.currentRole';
 
   const readHistory = () => JSON.parse(localStorage.getItem(attendanceHistoryKey) || '[]');
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
+
+  const path = window.location.pathname.toLowerCase();
+  const isAdminPage = path.includes('admin-');
+  const isEmployeePage = /dashboard|attendance-history|profile|offline|out-of-bounds/.test(path);
+  const currentRole = localStorage.getItem(currentRoleKey);
+
+  if (isAdminPage && currentRole !== 'admin') {
+    window.location.replace('login.html');
+    return;
+  }
+
+  if (isEmployeePage && currentRole === 'admin') {
+    window.location.replace('admin-monitoring.html');
+    return;
+  }
 
   const timeEl = document.getElementById('current-time');
   const headerTimeEl = document.getElementById('header-time');
@@ -23,9 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
       const employeeId = document.getElementById('employee-id').value.trim().toUpperCase();
-      window.location.href = employeeId.startsWith('ADMIN') ? 'admin-monitoring.html' : 'dashboard.html';
+      const selectedRole = document.getElementById('role').value;
+      const role = employeeId.startsWith('ADMIN') ? 'admin' : selectedRole;
+      localStorage.setItem(currentRoleKey, role);
+      window.location.href = role === 'admin' ? 'admin-monitoring.html' : 'dashboard.html';
     });
   }
+
+  document.querySelectorAll('[data-logout]').forEach((logoutLink) => {
+    logoutLink.addEventListener('click', () => {
+      localStorage.removeItem(currentRoleKey);
+    });
+  });
 
   const clockButton = document.getElementById('clock-button');
   if (clockButton) {
