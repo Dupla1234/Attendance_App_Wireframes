@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentUserKey = 'attendancePro.currentUser';
   const usersKey = 'attendancePro.users';
   const lastLocationAttemptKey = 'attendancePro.lastLocationAttempt';
-  const branchLocation = { latitude: -25.8603, longitude: 28.1871, radiusMeters: 50 };
+  const branchLocationKey = 'attendancePro.branchLocation';
+  const defaultBranchLocation = { latitude: -25.8603, longitude: 28.1871, radiusMeters: 50 };
+  const branchLocation = JSON.parse(localStorage.getItem(branchLocationKey) || 'null') || defaultBranchLocation;
   const defaultUsers = [
     { name: 'Demo Employee', id: 'EMP-1001', password: 'Employee@123', email: 'employee@demo.com', branch: 'HQ - Centurion', role: 'employee', rights: ['dashboard', 'history', 'profile'] },
     { name: 'Demo Administrator', id: 'ADMIN-0001', password: 'Admin@123', email: 'admin@demo.com', branch: 'All branches', role: 'admin', rights: ['dashboard', 'history', 'profile', 'reports', 'employees'] }
@@ -27,6 +29,36 @@ document.addEventListener('DOMContentLoaded', () => {
       + Math.cos(latitudeOne) * Math.cos(latitudeTwo) * Math.sin(longitudeDelta / 2) ** 2;
     return Math.round(earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine)));
   };
+
+  const pinLocationButton = document.querySelector('[data-pin-current-location]');
+  const pinLocationFeedback = document.querySelector('[data-pin-location-feedback]');
+  if (pinLocationButton && pinLocationFeedback) {
+    pinLocationButton.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        pinLocationFeedback.textContent = 'This browser does not support GPS location.';
+        return;
+      }
+
+      pinLocationButton.disabled = true;
+      pinLocationButton.textContent = 'Reading current location...';
+      navigator.geolocation.getCurrentPosition((position) => {
+        const savedLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          radiusMeters: 50,
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(branchLocationKey, JSON.stringify(savedLocation));
+        pinLocationButton.disabled = false;
+        pinLocationButton.textContent = 'Use current location as HQ pin';
+        pinLocationFeedback.textContent = `HQ pin saved at ${savedLocation.latitude.toFixed(5)}, ${savedLocation.longitude.toFixed(5)}. Future checks use this location.`;
+      }, () => {
+        pinLocationButton.disabled = false;
+        pinLocationButton.textContent = 'Use current location as HQ pin';
+        pinLocationFeedback.textContent = 'Location permission was unavailable. Allow GPS access and try again.';
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    });
+  }
 
   const path = window.location.pathname.toLowerCase();
   const isAdminPage = path.includes('admin-');
