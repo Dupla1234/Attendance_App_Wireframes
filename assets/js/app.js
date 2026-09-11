@@ -6,8 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const usersKey = 'attendancePro.users';
   const lastLocationAttemptKey = 'attendancePro.lastLocationAttempt';
   const branchLocationKey = 'attendancePro.branchLocation';
-  const defaultBranchLocation = { latitude: -25.8603, longitude: 28.1871, radiusMeters: 50 };
-  const branchLocation = JSON.parse(localStorage.getItem(branchLocationKey) || 'null') || defaultBranchLocation;
+  const defaultBranchLocation = { latitude: -25.8603, longitude: 28.1871, radiusMeters: 100 };
+  const savedBranchLocation = JSON.parse(localStorage.getItem(branchLocationKey) || 'null');
+  const branchLocation = savedBranchLocation || defaultBranchLocation;
+  if (branchLocation.radiusMeters === 50) {
+    branchLocation.radiusMeters = 100;
+    localStorage.setItem(branchLocationKey, JSON.stringify(branchLocation));
+  }
   const defaultUsers = [
     { name: 'Demo Employee', id: 'EMP-1001', password: 'Employee@123', email: 'employee@demo.com', branch: 'HQ - Centurion', role: 'employee', rights: ['dashboard', 'history', 'profile'] },
     { name: 'Demo Administrator', id: 'ADMIN-0001', password: 'Admin@123', email: 'admin@demo.com', branch: 'All branches', role: 'admin', rights: ['dashboard', 'history', 'profile', 'reports', 'employees'] }
@@ -45,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          radiusMeters: 50,
+          radiusMeters: 100,
           updatedAt: new Date().toISOString()
         };
         localStorage.setItem(branchLocationKey, JSON.stringify(savedLocation));
@@ -260,10 +265,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationFeedback = document.querySelector('[data-location-feedback]');
     if (locationButton && locationFeedback) {
       locationButton.addEventListener('click', () => {
-        const attempt = JSON.parse(localStorage.getItem(lastLocationAttemptKey) || 'null');
-        locationFeedback.textContent = attempt && attempt.distanceMeters !== null
-          ? `Measured ${attempt.distanceMeters}m from the pinned office. The allowed radius is ${branchLocation.radiusMeters}m.`
-          : 'Location refreshed. Press CLOCK IN to capture your position.';
+        if (!navigator.geolocation) {
+          locationFeedback.textContent = 'This browser does not support GPS location.';
+          return;
+        }
+
+        locationButton.disabled = true;
+        locationButton.textContent = 'Reading location...';
+        navigator.geolocation.getCurrentPosition((position) => {
+          const distanceMeters = calculateDistance(position.coords.latitude, position.coords.longitude);
+          const inBounds = distanceMeters <= branchLocation.radiusMeters;
+          localStorage.setItem(lastLocationAttemptKey, JSON.stringify({
+            capturedAt: new Date().toISOString(),
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            distanceMeters,
+            inBounds
+          }));
+          locationButton.disabled = false;
+          locationButton.textContent = 'Refresh location';
+          locationFeedback.textContent = `${distanceMeters}m from the pinned office. Allowed radius: ${branchLocation.radiusMeters}m. ${inBounds ? 'You are now in bounds.' : 'An admin must update the office pin if this is the correct location.'}`;
+          if (outOfBoundsDistance) outOfBoundsDistance.textContent = `${distanceMeters}m from pinned office`;
+        }, () => {
+          locationButton.disabled = false;
+          locationButton.textContent = 'Refresh location';
+          locationFeedback.textContent = 'Location permission was unavailable. Allow GPS access and try again.';
+        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
       });
     }
 
