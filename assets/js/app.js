@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentRoleKey = 'attendancePro.currentRole';
   const currentUserKey = 'attendancePro.currentUser';
   const usersKey = 'attendancePro.users';
+  const lastLocationAttemptKey = 'attendancePro.lastLocationAttempt';
+  const branchLocation = { latitude: -25.8603, longitude: 28.1871, radiusMeters: 50 };
   const defaultUsers = [
     { name: 'Demo Employee', id: 'EMP-1001', password: 'Employee@123', email: 'employee@demo.com', branch: 'HQ - Centurion', role: 'employee', rights: ['dashboard', 'history', 'profile'] },
     { name: 'Demo Administrator', id: 'ADMIN-0001', password: 'Admin@123', email: 'admin@demo.com', branch: 'All branches', role: 'admin', rights: ['dashboard', 'history', 'profile', 'reports', 'employees'] }
@@ -13,6 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
   const readUsers = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
   const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
+
+  const calculateDistance = (latitude, longitude) => {
+    const earthRadius = 6371000;
+    const toRadians = (value) => value * Math.PI / 180;
+    const latitudeDelta = toRadians(latitude - branchLocation.latitude);
+    const longitudeDelta = toRadians(longitude - branchLocation.longitude);
+    const latitudeOne = toRadians(branchLocation.latitude);
+    const latitudeTwo = toRadians(latitude);
+    const haversine = Math.sin(latitudeDelta / 2) ** 2
+      + Math.cos(latitudeOne) * Math.cos(latitudeTwo) * Math.sin(longitudeDelta / 2) ** 2;
+    return Math.round(earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine)));
+  };
 
   const path = window.location.pathname.toLowerCase();
   const isAdminPage = path.includes('admin-');
@@ -72,6 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const clockButton = document.getElementById('clock-button');
   if (clockButton) {
+    const radiusStatus = document.getElementById('radius-status');
+    const distanceReadout = document.getElementById('distance-readout');
+    const gpsStatus = document.getElementById('gps-status');
+    const clockFeedback = document.getElementById('clock-feedback');
     clockButton.addEventListener('click', async () => {
       if (localStorage.getItem(pendingCheckInKey)) {
         window.location.href = 'offline.html';
@@ -84,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
         latitude: null,
         longitude: null,
         accuracy: null,
+        distanceMeters: null,
+        inBounds: null,
         status: navigator.onLine ? 'captured-online' : 'queued-offline'
       };
 
@@ -99,11 +119,30 @@ document.addEventListener('DOMContentLoaded', () => {
           pendingCheckIn.latitude = position.coords.latitude;
           pendingCheckIn.longitude = position.coords.longitude;
           pendingCheckIn.accuracy = position.coords.accuracy;
+          pendingCheckIn.distanceMeters = calculateDistance(position.coords.latitude, position.coords.longitude);
+          pendingCheckIn.inBounds = pendingCheckIn.distanceMeters <= branchLocation.radiusMeters;
+          if (distanceReadout) distanceReadout.textContent = `${pendingCheckIn.distanceMeters}m from pinned office (GPS accuracy ±${Math.round(pendingCheckIn.accuracy)}m)`;
+          if (radiusStatus) radiusStatus.textContent = pendingCheckIn.inBounds ? 'In-Bounds' : 'Out of Bounds';
+          if (gpsStatus) {
+            gpsStatus.className = `status-pill ${pendingCheckIn.inBounds ? 'success' : 'danger'}`;
+            gpsStatus.innerHTML = `<span class="status-dot"></span> ${pendingCheckIn.inBounds ? 'GPS verified' : 'Outside radius'}`;
+          }
         } catch {
           pendingCheckIn.status = 'queued-without-location';
+          if (clockFeedback) clockFeedback.textContent = 'Location permission is required before clock-in can be verified.';
+          return;
         }
       } else {
         pendingCheckIn.status = 'queued-without-location';
+        if (clockFeedback) clockFeedback.textContent = 'This browser does not support location services.';
+        return;
+      }
+
+      localStorage.setItem(lastLocationAttemptKey, JSON.stringify(pendingCheckIn));
+
+      if (!pendingCheckIn.inBounds) {
+        window.location.href = 'out-of-bounds.html';
+        return;
       }
 
       if (!navigator.onLine) {
@@ -125,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sub) {
         sub.textContent = isClocked ? 'Shift active' : 'Tap to record your start time';
       }
+      if (clockFeedback) clockFeedback.textContent = `Clock-in recorded ${pendingCheckIn.distanceMeters}m from the pinned office.`;
     });
   }
 
@@ -141,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (connectionButton && connectionFeedback) {
       const recordTime = document.querySelector('[data-record-time]');
       const recordLocation = document.querySelector('[data-record-location]');
+      const recordDistance = document.querySelector('[data-record-distance]');
       const recordVerification = document.querySelector('[data-record-verification]');
       const queueStatus = document.querySelector('[data-queue-status]');
       const pendingCheckIn = JSON.parse(localStorage.getItem(pendingCheckInKey) || 'null');
@@ -152,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? 'Unavailable at capture'
             : `${pendingCheckIn.latitude.toFixed(5)}, ${pendingCheckIn.longitude.toFixed(5)} (±${Math.round(pendingCheckIn.accuracy)}m)`;
         }
+        if (recordDistance) recordDistance.textContent = pendingCheckIn.distanceMeters === null ? 'Not measured' : `${pendingCheckIn.distanceMeters}m`;
       }
 
       connectionButton.addEventListener('click', () => {
@@ -186,9 +228,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationFeedback = document.querySelector('[data-location-feedback]');
     if (locationButton && locationFeedback) {
       locationButton.addEventListener('click', () => {
-        locationFeedback.textContent = 'Location refreshed. Move within 50m of the branch to clock in.';
+        const attempt = JSON.parse(localStorage.getItem(lastLocationAttemptKey) || 'null');
+        locationFeedback.textContent = attempt && attempt.distanceMeters !== null
+          ? `Measured ${attempt.distanceMeters}m from the pinned office. The allowed radius is ${branchLocation.radiusMeters}m.`
+          : 'Location refreshed. Press CLOCK IN to capture your position.';
       });
     }
+
+  const outOfBoundsDistance = document.querySelector('[data-out-of-bounds-distance]');
+  if (outOfBoundsDistance) {
+    const attempt = JSON.parse(localStorage.getItem(lastLocationAttemptKey) || 'null');
+    if (attempt && attempt.distanceMeters !== null) outOfBoundsDistance.textContent = `${attempt.distanceMeters}m from pinned office`;
+  }
 
   const exportButton = document.querySelector('[data-export-history]');
   const historyFeedback = document.querySelector('[data-history-feedback]');

@@ -54,10 +54,11 @@
 
           <div class="dashboard-hero">
             <section class="hero-panel">
-              <span class="status-pill success"><span class="status-dot"></span> GPS Status</span>
+              <span class="status-pill success" id="gps-status"><span class="status-dot"></span> GPS Status</span>
               <h2>HQ - Centurion</h2>
-              <strong>In-Bounds</strong>
+              <strong id="radius-status">Location not checked</strong>
               <p>1293 South Street Maxi Building</p>
+              <p class="location-readout" id="distance-readout">Press CLOCK IN to measure distance from the pinned office.</p>
             </section>
 
             <section class="info-card transparent-panel">
@@ -89,6 +90,7 @@
                 <div class="sub">Tap to record your start time</div>
               </div>
             </button>
+            <p class="state-feedback" id="clock-feedback" aria-live="polite"></p>
             <div class="flow-links">
               <a class="offline-link" href="offline.html">Test offline check-in</a>
               <a class="offline-link" href="out-of-bounds.html">Test out-of-bounds state</a>
