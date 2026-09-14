@@ -31,6 +31,33 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${hours}h ${minutes}m`;
   };
 
+  const getTodayWorkedMilliseconds = (shiftStart = null) => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const todayHistory = readHistory().filter((entry) => {
+      if (!entry.clockedOutAt || !entry.capturedAt) return false;
+      const startTime = new Date(entry.capturedAt).getTime();
+      const endTime = new Date(entry.clockedOutAt).getTime();
+      return startTime >= startOfDay.getTime() && endTime <= endOfDay.getTime();
+    });
+
+    const completedMilliseconds = todayHistory.reduce((sum, entry) => sum + (Number(entry.workedMilliseconds) || 0), 0);
+
+    if (!shiftStart) {
+      return completedMilliseconds;
+    }
+
+    const activeStart = new Date(shiftStart).getTime();
+    const activeMilliseconds = activeStart >= startOfDay.getTime() && activeStart < endOfDay.getTime()
+      ? Math.max(0, Date.now() - activeStart)
+      : 0;
+
+    return completedMilliseconds + activeMilliseconds;
+  };
+
   const calculateDistance = (latitude, longitude) => {
     const earthRadius = 6371000;
     const toRadians = (value) => value * Math.PI / 180;
@@ -141,12 +168,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let timer;
 
     const renderShift = () => {
+      const todayWorkedMilliseconds = getTodayWorkedMilliseconds(activeShift ? activeShift.startedAt : null);
+
       if (!activeShift) {
         clockButton.classList.remove('clocked');
         clockButton.querySelector('.label').textContent = 'CLOCK IN';
         clockButton.querySelector('.sub').textContent = 'Tap to record your start time';
-        if (hoursToday) hoursToday.textContent = '0h 0m';
-        if (workStatus) workStatus.innerHTML = '<span class="status-dot"></span> Not clocked in';
+        if (hoursToday) hoursToday.textContent = formatDuration(todayWorkedMilliseconds);
+        if (workStatus) {
+          workStatus.innerHTML = todayWorkedMilliseconds > 0
+            ? '<span class="status-dot"></span> Worked today'
+            : '<span class="status-dot"></span> Not clocked in';
+        }
         return;
       }
 
@@ -154,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clockButton.querySelector('.label').textContent = 'CLOCK OUT';
       clockButton.querySelector('.sub').textContent = 'Tap to stop your shift';
       if (workStatus) workStatus.innerHTML = '<span class="status-dot"></span> Shift active';
-      if (hoursToday) hoursToday.textContent = formatDuration(Date.now() - new Date(activeShift.startedAt).getTime());
+      if (hoursToday) hoursToday.textContent = formatDuration(todayWorkedMilliseconds);
     };
 
     renderShift();
@@ -175,8 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
         saveHistory(history);
         activeShift = null;
         localStorage.removeItem(activeShiftKey);
+        const totalToday = getTodayWorkedMilliseconds();
         renderShift();
-        if (clockFeedback) clockFeedback.textContent = `Shift ended. You worked ${formatDuration(workedMilliseconds)}.`;
+        if (clockFeedback) clockFeedback.textContent = `Shift ended. You worked ${formatDuration(workedMilliseconds)}. Total for today: ${formatDuration(totalToday)}.`;
         return;
       }
 
@@ -353,13 +387,59 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportButton = document.querySelector('[data-export-history]');
   const historyFeedback = document.querySelector('[data-history-feedback]');
   const historyTable = document.getElementById('attendance-records');
+  const totalWeekEl = document.getElementById('total-week');
+  const totalMonthEl = document.getElementById('total-month');
+
+  const calculateRangeTotal = (records, range) => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    return records.reduce((sum, record) => {
+      if (!record.capturedAt || !record.clockedOutAt) return sum;
+      const startTime = new Date(record.capturedAt).getTime();
+      const endTime = new Date(record.clockedOutAt).getTime();
+      let include = false;
+
+      if (range === 'week') {
+        include = startTime >= startOfWeek.getTime() && endTime <= (new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)).getTime();
+      }
+
+      if (range === 'month') {
+        include = startTime >= startOfMonth.getTime() && endTime <= endOfMonth.getTime();
+      }
+
+      if (!include) return sum;
+      return sum + (Number(record.workedMilliseconds) || 0);
+    }, 0);
+  };
+
   if (historyTable) {
-    readHistory().forEach((record) => {
+    const historyEntries = [...readHistory()].sort((a, b) => new Date(b.capturedAt) - new Date(a.capturedAt));
+
+    historyEntries.forEach((record) => {
       const row = document.createElement('tr');
       const capturedDate = new Date(record.capturedAt);
-      row.innerHTML = `<td>${capturedDate.toLocaleDateString()}</td><td>${capturedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td><td>--</td><td><span class="badge success">${record.status}</span></td>`;
-      historyTable.prepend(row);
+      const clockedOutAt = record.clockedOutAt ? new Date(record.clockedOutAt) : null;
+      const workedMilliseconds = Number(record.workedMilliseconds) || 0;
+      const displayHours = workedMilliseconds > 0 ? formatDuration(workedMilliseconds) : '0h 0m';
+      const statusClass = record.status === 'Late' ? 'warning' : 'success';
+      row.innerHTML = `
+        <td>${capturedDate.toLocaleDateString()}</td>
+        <td>${capturedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+        <td>${clockedOutAt ? clockedOutAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}</td>
+        <td>${displayHours}</td>
+        <td><span class="badge ${statusClass}">${record.status}</span></td>
+      `;
+      historyTable.appendChild(row);
     });
+
+    if (totalWeekEl) totalWeekEl.textContent = formatDuration(calculateRangeTotal(historyEntries, 'week'));
+    if (totalMonthEl) totalMonthEl.textContent = formatDuration(calculateRangeTotal(historyEntries, 'month'));
   }
 
   if (exportButton && historyFeedback) {
