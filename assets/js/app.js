@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
   const currentRoleKey = 'attendancePro.currentRole';
   const currentUserKey = 'attendancePro.currentUser';
+  const activeShiftKey = 'attendancePro.activeShift';
   const usersKey = 'attendancePro.users';
   const lastLocationAttemptKey = 'attendancePro.lastLocationAttempt';
   const branchLocationKey = 'attendancePro.branchLocation';
@@ -22,6 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
   const readUsers = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
   const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
+
+  const formatDuration = (milliseconds) => {
+    const totalMinutes = Math.max(0, Math.floor(milliseconds / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  };
 
   const calculateDistance = (latitude, longitude) => {
     const earthRadius = 6371000;
@@ -127,7 +135,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const distanceReadout = document.getElementById('distance-readout');
     const gpsStatus = document.getElementById('gps-status');
     const clockFeedback = document.getElementById('clock-feedback');
+    const hoursToday = document.getElementById('hours-today');
+    const workStatus = document.getElementById('work-status');
+    let activeShift = JSON.parse(localStorage.getItem(activeShiftKey) || 'null');
+    let timer;
+
+    const renderShift = () => {
+      if (!activeShift) {
+        clockButton.classList.remove('clocked');
+        clockButton.querySelector('.label').textContent = 'CLOCK IN';
+        clockButton.querySelector('.sub').textContent = 'Tap to record your start time';
+        if (hoursToday) hoursToday.textContent = '0h 0m';
+        if (workStatus) workStatus.innerHTML = '<span class="status-dot"></span> Not clocked in';
+        return;
+      }
+
+      clockButton.classList.add('clocked');
+      clockButton.querySelector('.label').textContent = 'CLOCK OUT';
+      clockButton.querySelector('.sub').textContent = 'Tap to stop your shift';
+      if (workStatus) workStatus.innerHTML = '<span class="status-dot"></span> Shift active';
+      if (hoursToday) hoursToday.textContent = formatDuration(Date.now() - new Date(activeShift.startedAt).getTime());
+    };
+
+    renderShift();
+    timer = setInterval(renderShift, 1000);
+
     clockButton.addEventListener('click', async () => {
+      if (activeShift) {
+        const endedAt = new Date().toISOString();
+        const workedMilliseconds = new Date(endedAt).getTime() - new Date(activeShift.startedAt).getTime();
+        const history = readHistory();
+        history.unshift({
+          capturedAt: activeShift.startedAt,
+          clockedOutAt: endedAt,
+          workedMilliseconds,
+          distanceMeters: activeShift.distanceMeters,
+          status: 'Completed'
+        });
+        saveHistory(history);
+        activeShift = null;
+        localStorage.removeItem(activeShiftKey);
+        renderShift();
+        if (clockFeedback) clockFeedback.textContent = `Shift ended. You worked ${formatDuration(workedMilliseconds)}.`;
+        return;
+      }
+
       if (localStorage.getItem(pendingCheckInKey)) {
         window.location.href = 'offline.html';
         return;
@@ -183,24 +235,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!navigator.onLine) {
+        activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters };
+        localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
         localStorage.setItem(pendingCheckInKey, JSON.stringify(pendingCheckIn));
         window.location.href = 'offline.html';
         return;
       }
 
+      activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters };
+      localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
+
       const history = readHistory();
       history.unshift({ ...pendingCheckIn, status: 'Present' });
       saveHistory(history);
 
-      const isClocked = clockButton.classList.toggle('clocked');
-      const label = clockButton.querySelector('.label');
-      if (label) {
-        label.textContent = isClocked ? 'CLOCKED IN' : 'CLOCK IN';
-      }
-      const sub = clockButton.querySelector('.sub');
-      if (sub) {
-        sub.textContent = isClocked ? 'Shift active' : 'Tap to record your start time';
-      }
+      renderShift();
       if (clockFeedback) clockFeedback.textContent = `Clock-in recorded ${pendingCheckIn.distanceMeters}m from the pinned office.`;
     });
   }
