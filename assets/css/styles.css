@@ -103,6 +103,12 @@ button, input {
   font-size: 22px;
 }
 
+.brand-logo {
+  object-fit: contain;
+  background: var(--surface);
+  padding: 2px;
+}
+
 .brand-name {
   font-size: 1.2rem;
   font-weight: 700;
@@ -396,6 +402,13 @@ button, input {
   place-items: center;
   font-size: 2rem;
   color: white;
+  margin-bottom: 12px;
+}
+
+.logo-image-login {
+  width: min(100%, 330px);
+  height: 112px;
+  object-fit: contain;
   margin-bottom: 12px;
 }
 
