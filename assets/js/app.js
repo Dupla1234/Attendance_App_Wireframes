@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: 'Demo Employee', id: 'EMP-1001', password: 'Employee@123', email: 'employee@demo.com', branch: 'HQ - Centurion', role: 'employee', rights: ['dashboard', 'history', 'profile'] },
     { name: 'Demo Administrator', id: 'ADMIN-0001', password: 'Admin@123', email: 'admin@demo.com', branch: 'All branches', role: 'admin', rights: ['dashboard', 'history', 'profile', 'reports', 'employees'] }
   ];
+  const shiftStartHour = 8;
+  const shiftStartMinute = 0;
+  const gracePeriodMinutes = 5;
 
   const readHistory = () => JSON.parse(localStorage.getItem(attendanceHistoryKey) || '[]');
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
@@ -30,6 +33,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
   };
+
+  const formatLateDuration = (milliseconds) => {
+    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}h ${minutes}m late`;
+    if (minutes > 0) return `${minutes}m ${seconds}s late`;
+    return `${seconds}s late`;
+  };
+
+  const getGraceDeadline = (date = new Date()) => {
+    const deadline = new Date(date);
+    deadline.setHours(shiftStartHour, shiftStartMinute + gracePeriodMinutes, 0, 0);
+    return deadline;
+  };
+
+  const getLateMilliseconds = (date = new Date()) => Math.max(0, date.getTime() - getGraceDeadline(date).getTime());
 
   const getTodayWorkedMilliseconds = (shiftStart = null) => {
     const now = new Date();
@@ -164,11 +185,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const clockFeedback = document.getElementById('clock-feedback');
     const hoursToday = document.getElementById('hours-today');
     const workStatus = document.getElementById('work-status');
+    const shiftStatus = document.getElementById('shift-status');
     let activeShift = JSON.parse(localStorage.getItem(activeShiftKey) || 'null');
     let timer;
 
     const renderShift = () => {
       const todayWorkedMilliseconds = getTodayWorkedMilliseconds(activeShift ? activeShift.startedAt : null);
+      const lateMilliseconds = getLateMilliseconds();
+      const lateText = lateMilliseconds > 0 ? formatLateDuration(lateMilliseconds) : 'Expected · 5 min grace';
+
+      if (shiftStatus) {
+        shiftStatus.className = `status-pill ${lateMilliseconds > 0 ? 'danger' : 'warning'}`;
+        const recordedLateBy = activeShift && activeShift.lateByMilliseconds ? activeShift.lateByMilliseconds : lateMilliseconds;
+        shiftStatus.innerHTML = `<span class="status-dot"></span> ${activeShift && activeShift.late ? `Clocked in ${formatLateDuration(recordedLateBy)}` : lateText}`;
+      }
 
       if (!activeShift) {
         clockButton.classList.remove('clocked');
@@ -227,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         accuracy: null,
         distanceMeters: null,
         inBounds: null,
+        late: getLateMilliseconds(new Date(capturedAt)) > 0,
+        lateByMilliseconds: getLateMilliseconds(new Date(capturedAt)),
         status: navigator.onLine ? 'captured-online' : 'queued-offline'
       };
 
@@ -269,14 +301,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!navigator.onLine) {
-        activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters };
+        activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters, late: pendingCheckIn.late, lateByMilliseconds: pendingCheckIn.lateByMilliseconds };
         localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
         localStorage.setItem(pendingCheckInKey, JSON.stringify(pendingCheckIn));
         window.location.href = 'offline.html';
         return;
       }
 
-      activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters };
+      activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters, late: pendingCheckIn.late, lateByMilliseconds: pendingCheckIn.lateByMilliseconds };
       localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
 
       const history = readHistory();
