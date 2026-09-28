@@ -343,6 +343,15 @@ button, input {
   margin: 8px 0;
 }
 
+.location-refresh-btn {
+  margin-top: 4px;
+}
+
+.location-refresh-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .clock-button {
   width: 180px;
   height: 180px;

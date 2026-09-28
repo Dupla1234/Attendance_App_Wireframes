@@ -91,6 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.round(earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine)));
   };
 
+  const requestFreshLocation = () => new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 30000,
+      maximumAge: 0
+    });
+  });
+
   const pinLocationButton = document.querySelector('[data-pin-current-location]');
   const pinLocationFeedback = document.querySelector('[data-pin-location-feedback]');
   if (pinLocationButton && pinLocationFeedback) {
@@ -264,13 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (navigator.geolocation) {
         try {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 8000,
-              maximumAge: 0
-            });
-          });
+          clockButton.disabled = true;
+          if (clockFeedback) clockFeedback.textContent = 'Getting a fresh high-accuracy location. Keep this page open...';
+          const position = await requestFreshLocation();
           pendingCheckIn.latitude = position.coords.latitude;
           pendingCheckIn.longitude = position.coords.longitude;
           pendingCheckIn.accuracy = position.coords.accuracy;
@@ -283,15 +287,19 @@ document.addEventListener('DOMContentLoaded', () => {
             gpsStatus.innerHTML = `<span class="status-dot"></span> ${pendingCheckIn.inBounds ? 'GPS verified' : 'Outside radius'}`;
           }
         } catch {
+          clockButton.disabled = false;
           pendingCheckIn.status = 'queued-without-location';
-          if (clockFeedback) clockFeedback.textContent = 'Location permission is required before clock-in can be verified.';
+          if (clockFeedback) clockFeedback.textContent = 'Could not get a fresh location. Allow location access, enable device location services, and try again.';
           return;
         }
       } else {
+        clockButton.disabled = false;
         pendingCheckIn.status = 'queued-without-location';
         if (clockFeedback) clockFeedback.textContent = 'This browser does not support location services.';
         return;
       }
+
+      clockButton.disabled = false;
 
       localStorage.setItem(lastLocationAttemptKey, JSON.stringify(pendingCheckIn));
 
@@ -387,7 +395,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         locationButton.disabled = true;
         locationButton.textContent = 'Reading location...';
-        navigator.geolocation.getCurrentPosition((position) => {
+        requestFreshLocation().then((position) => {
+          const distanceMeters = calculateDistance(position.coords.latitude, position.coords.longitude);
+          const inBounds = distanceMeters <= branchLocation.radiusMeters;
+          const locationAttempt = {
+            capturedAt: new Date().toISOString(),
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            distanceMeters,
+            inBounds
+          };
+          localStorage.setItem(lastLocationAttemptKey, JSON.stringify(locationAttempt));
+          locationButton.disabled = false;
+          locationButton.textContent = 'Refresh current location';
+          locationFeedback.textContent = `${distanceMeters}m from the pinned office (GPS accuracy ±${Math.round(position.coords.accuracy)}m). ${inBounds ? 'You are in bounds.' : 'You are outside the approved radius.'}`;
+          if (outOfBoundsDistance) outOfBoundsDistance.textContent = `${distanceMeters}m from pinned office`;
+        }).catch(() => {
+          locationButton.disabled = false;
+          locationButton.textContent = 'Refresh current location';
+          locationFeedback.textContent = 'Could not get a fresh location. Allow location access, enable device location services, and try again.';
+        });
+      });
+    }
+
+    if (locationButton && !locationFeedback) {
+      const distanceReadout = document.getElementById('distance-readout');
+      const radiusStatus = document.getElementById('radius-status');
+      const gpsStatus = document.getElementById('gps-status');
+
+      locationButton.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          if (distanceReadout) distanceReadout.textContent = 'This browser does not support location services.';
+          return;
+        }
+
+        locationButton.disabled = true;
+        locationButton.textContent = 'Getting current location...';
+        requestFreshLocation().then((position) => {
           const distanceMeters = calculateDistance(position.coords.latitude, position.coords.longitude);
           const inBounds = distanceMeters <= branchLocation.radiusMeters;
           localStorage.setItem(lastLocationAttemptKey, JSON.stringify({
@@ -399,14 +444,18 @@ document.addEventListener('DOMContentLoaded', () => {
             inBounds
           }));
           locationButton.disabled = false;
-          locationButton.textContent = 'Refresh location';
-          locationFeedback.textContent = `${distanceMeters}m from the pinned office. Allowed radius: ${branchLocation.radiusMeters}m. ${inBounds ? 'You are now in bounds.' : 'An admin must update the office pin if this is the correct location.'}`;
-          if (outOfBoundsDistance) outOfBoundsDistance.textContent = `${distanceMeters}m from pinned office`;
-        }, () => {
+          locationButton.textContent = 'Refresh current location';
+          if (distanceReadout) distanceReadout.textContent = `${distanceMeters}m from pinned office (GPS accuracy ±${Math.round(position.coords.accuracy)}m)`;
+          if (radiusStatus) radiusStatus.textContent = inBounds ? 'In-Bounds' : 'Out of Bounds';
+          if (gpsStatus) {
+            gpsStatus.className = `status-pill ${inBounds ? 'success' : 'danger'}`;
+            gpsStatus.innerHTML = `<span class="status-dot"></span> ${inBounds ? 'GPS verified' : 'Outside radius'}`;
+          }
+        }).catch(() => {
           locationButton.disabled = false;
-          locationButton.textContent = 'Refresh location';
-          locationFeedback.textContent = 'Location permission was unavailable. Allow GPS access and try again.';
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+          locationButton.textContent = 'Refresh current location';
+          if (distanceReadout) distanceReadout.textContent = 'Could not get a fresh location. Check location permissions and device location services.';
+        });
       });
     }
 
