@@ -227,6 +227,31 @@ button, input {
 .admin-page-heading p { margin: 5px 0 0; color: #69737c; font-size: .8rem; }
 .admin-live-badge { display: inline-flex; align-items: center; gap: 7px; color: #13805d; font-size: .73rem; font-weight: 700; }
 .admin-live-badge span { width: 7px; height: 7px; border-radius: 50%; background: #16b97d; }
+.branch-page-heading { margin-bottom: 7px; }
+.add-branch-btn { padding: 9px 17px; font-size: .72rem; }
+.branch-feedback { min-height: 22px; margin: 0 0 14px; color: #6d7780; font-size: .7rem; }
+.branch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.branch-card { padding: 13px; background: #fff; border: 1px solid #d4d9de; border-radius: 6px; box-shadow: 0 1px 2px rgba(22, 32, 43, .03); }
+.branch-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.branch-icon { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 3px; background: #e8f0fd; color: #2868c3; font-size: 1.15rem; }
+.branch-icon.muted { background: #f0f1f2; color: #879099; }
+.branch-card h2 { margin: 0; font-size: .92rem; }
+.branch-code { color: #78828b; font-size: .61rem; }
+.branch-offline { color: #c05252; font-size: .61rem; font-weight: 700; }
+.branch-detail { display: flex; align-items: start; gap: 8px; min-height: 25px; color: #737d86; font-size: .68rem; line-height: 1.35; }
+.branch-detail:first-of-type { color: #4d5861; }
+.branch-detail span { flex: 1; }
+.branch-detail strong { color: #4c5660; }
+.branch-map { height: 94px; display: grid; place-items: center; position: relative; overflow: hidden; margin-top: 8px; border: 1px solid #d4d9de; border-radius: 3px; background-color: #dceaf1; color: #57748b; font-size: .62rem; }
+.branch-map::before, .branch-map::after { content: ''; position: absolute; inset: -30%; background: repeating-linear-gradient(28deg, transparent 0 18px, rgba(255,255,255,.8) 19px 21px, transparent 22px 42px), repeating-linear-gradient(118deg, transparent 0 25px, rgba(100,140,156,.25) 26px 28px, transparent 29px 52px); transform: rotate(-12deg); }
+.branch-map span { z-index: 1; width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: rgba(56, 122, 194, .25); border: 1px solid rgba(41, 100, 170, .55); color: #3d6e9a; font-weight: 700; }
+.branch-map-rosslyn { background-color: #e0e3e5; }
+.branch-map-rosslyn::before { background: repeating-linear-gradient(90deg, transparent 0 14px, rgba(255,255,255,.9) 15px 22px, transparent 23px 39px), repeating-linear-gradient(0deg, transparent 0 20px, rgba(112,126,136,.2) 21px 25px, transparent 26px 43px); transform: rotate(-20deg); }
+.branch-map-empty { background: #f1f2f3; color: #a1a8ae; font-size: 1.4rem; }
+.branch-map-empty::before, .branch-map-empty::after { display: none; }
+.branch-action { width: 100%; margin-top: 9px; padding: 8px; border: 1px solid #cbd4df; border-radius: 4px; background: #f7faff; color: #1759ab; cursor: pointer; font-size: .67rem; font-weight: 700; }
+.branch-action:hover { background: #eaf2ff; }
+.branch-empty { padding: 32px; color: #77818a; text-align: center; }
 .admin-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .admin-stat { padding: 14px 16px; background: #fff; border: 1px solid #dfe3e7; border-radius: 5px; }
 .admin-stat span { display: block; color: #78818a; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
@@ -820,6 +845,7 @@ button, input {
   .admin-settings-link { display: none; }
   .admin-monitor-grid { grid-template-columns: 1fr; }
   .admin-stat-strip { grid-template-columns: repeat(2, 1fr); }
+  .branch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .layout {
     grid-template-columns: 1fr;
@@ -864,4 +890,6 @@ button, input {
   .admin-main { padding: 18px 14px 32px; }
   .admin-nav { grid-template-columns: repeat(2, 1fr); }
   .admin-page-heading h1 { font-size: 1.1rem; }
+  .branch-page-heading { align-items: start; }
+  .branch-grid { grid-template-columns: 1fr; }
 }

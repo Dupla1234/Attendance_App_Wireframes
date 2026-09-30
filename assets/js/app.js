@@ -475,6 +475,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalWeekEl = document.getElementById('total-week');
   const totalMonthEl = document.getElementById('total-month');
 
+  const branchSearch = document.querySelector('[data-branch-search]');
+  const branchCards = document.querySelectorAll('[data-branch-card]');
+  const branchEmpty = document.querySelector('[data-branch-empty]');
+  if (branchSearch && branchCards.length) {
+    const filterBranches = () => {
+      const searchTerm = branchSearch.value.trim().toLowerCase();
+      let visibleCount = 0;
+      branchCards.forEach((card) => {
+        const isVisible = card.dataset.branchName.toLowerCase().includes(searchTerm);
+        card.hidden = !isVisible;
+        if (isVisible) visibleCount += 1;
+      });
+      if (branchEmpty) branchEmpty.hidden = visibleCount > 0;
+    };
+    branchSearch.addEventListener('input', filterBranches);
+  }
+
   const calculateRangeTotal = (records, range) => {
     const now = new Date();
     const startOfWeek = new Date(now);
