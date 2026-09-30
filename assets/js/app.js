@@ -101,6 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const pinLocationButton = document.querySelector('[data-pin-current-location]');
   const pinLocationFeedback = document.querySelector('[data-pin-location-feedback]');
+  const renderSavedHqLocation = () => {
+    const coordinates = document.querySelector('[data-hq-coordinates]');
+    const radius = document.querySelector('[data-hq-radius]');
+    const mapLabel = document.querySelector('[data-hq-map-label]');
+    if (coordinates) coordinates.textContent = `${branchLocation.latitude.toFixed(6)}, ${branchLocation.longitude.toFixed(6)}`;
+    if (radius) radius.textContent = `${branchLocation.radiusMeters}m`;
+    if (mapLabel) mapLabel.textContent = `${branchLocation.latitude.toFixed(5)}, ${branchLocation.longitude.toFixed(5)}`;
+  };
+  renderSavedHqLocation();
+
   if (pinLocationButton && pinLocationFeedback) {
     pinLocationButton.addEventListener('click', () => {
       if (!navigator.geolocation) {
@@ -110,22 +120,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
       pinLocationButton.disabled = true;
       pinLocationButton.textContent = 'Reading current location...';
-      navigator.geolocation.getCurrentPosition((position) => {
+      requestFreshLocation().then((position) => {
         const savedLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           radiusMeters: 100,
           updatedAt: new Date().toISOString()
         };
+        Object.assign(branchLocation, savedLocation);
         localStorage.setItem(branchLocationKey, JSON.stringify(savedLocation));
         pinLocationButton.disabled = false;
-        pinLocationButton.textContent = 'Use current location as HQ pin';
-        pinLocationFeedback.textContent = `HQ pin saved at ${savedLocation.latitude.toFixed(5)}, ${savedLocation.longitude.toFixed(5)}. Future checks use this location.`;
-      }, () => {
+        pinLocationButton.textContent = 'Update HQ location';
+        pinLocationFeedback.textContent = `HQ pin saved at ${savedLocation.latitude.toFixed(6)}, ${savedLocation.longitude.toFixed(6)}. Future checks use this exact location.`;
+        document.querySelector('[data-hq-coordinates]')?.replaceChildren(document.createTextNode(`${savedLocation.latitude.toFixed(6)}, ${savedLocation.longitude.toFixed(6)}`));
+        document.querySelector('[data-hq-radius]')?.replaceChildren(document.createTextNode(`${savedLocation.radiusMeters}m`));
+        document.querySelector('[data-hq-map-label]')?.replaceChildren(document.createTextNode(`${savedLocation.latitude.toFixed(5)}, ${savedLocation.longitude.toFixed(5)}`));
+      }).catch(() => {
         pinLocationButton.disabled = false;
-        pinLocationButton.textContent = 'Use current location as HQ pin';
+        pinLocationButton.textContent = 'Update HQ location';
         pinLocationFeedback.textContent = 'Location permission was unavailable. Allow GPS access and try again.';
-      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      });
     });
   }
 

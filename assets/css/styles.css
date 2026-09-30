@@ -244,7 +244,7 @@ button, input {
 .branch-detail strong { color: #4c5660; }
 .branch-map { height: 94px; display: grid; place-items: center; position: relative; overflow: hidden; margin-top: 8px; border: 1px solid #d4d9de; border-radius: 3px; background-color: #dceaf1; color: #57748b; font-size: .62rem; }
 .branch-map::before, .branch-map::after { content: ''; position: absolute; inset: -30%; background: repeating-linear-gradient(28deg, transparent 0 18px, rgba(255,255,255,.8) 19px 21px, transparent 22px 42px), repeating-linear-gradient(118deg, transparent 0 25px, rgba(100,140,156,.25) 26px 28px, transparent 29px 52px); transform: rotate(-12deg); }
-.branch-map span { z-index: 1; width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: rgba(56, 122, 194, .25); border: 1px solid rgba(41, 100, 170, .55); color: #3d6e9a; font-weight: 700; }
+.branch-map span { z-index: 1; width: 82px; min-height: 62px; padding: 5px; display: grid; place-items: center; border-radius: 50%; background: rgba(56, 122, 194, .25); border: 1px solid rgba(41, 100, 170, .55); color: #3d6e9a; font-size: .56rem; font-weight: 700; text-align: center; }
 .branch-map-rosslyn { background-color: #e0e3e5; }
 .branch-map-rosslyn::before { background: repeating-linear-gradient(90deg, transparent 0 14px, rgba(255,255,255,.9) 15px 22px, transparent 23px 39px), repeating-linear-gradient(0deg, transparent 0 20px, rgba(112,126,136,.2) 21px 25px, transparent 26px 43px); transform: rotate(-20deg); }
 .branch-map-empty { background: #f1f2f3; color: #a1a8ae; font-size: 1.4rem; }
