@@ -3,14 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AttendancePro | Admin Monitoring</title>
+    <title>AttendancePro | Live Attendance</title>
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
-  <body>
-    <main class="page index-page">
-      <div class="page-header"><div><h1>Admin Monitoring</h1><p>Live attendance overview</p></div><nav class="page-links page-links-inline"><a href="admin-employees.html">Employees</a><a href="admin-branches.html">Branches</a><a href="admin-reports.html">Reports</a><a class="secondary-btn" href="../index.html">All pages</a><a class="secondary-btn" href="login.html" data-logout>Sign out</a></nav></div>
-      <div class="grid grid-4"><div class="stat-card"><div class="stat-label">Present</div><div class="stat-value">356</div></div><div class="stat-card"><div class="stat-label">Late</div><div class="stat-value">18</div></div><div class="stat-card"><div class="stat-label">Out of bounds</div><div class="stat-value">7</div></div><div class="stat-card"><div class="stat-label">Active employees</div><div class="stat-value">428</div></div></div>
-    </main>
+  <body class="admin-workspace">
+    <header class="admin-topbar"><div class="admin-topbar-inner"><div class="admin-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search attendance..." aria-label="Search attendance" data-monitoring-search /></div><div class="admin-utilities"><button type="button" class="icon-button" title="Notifications" aria-label="Notifications">♧</button><button type="button" class="icon-button" title="Settings" aria-label="Settings">⚙</button><div class="admin-avatar">AD</div></div></div></header>
+    <div class="admin-shell">
+      <aside class="admin-sidebar"><div class="admin-brand"><strong>AttendanceAdmin</strong><span>Enterprise Portal</span></div><nav class="admin-nav" aria-label="Admin navigation"><a class="admin-nav-item active" href="admin-monitoring.html"><span>▦</span> Overview</a><a class="admin-nav-item" href="admin-employees.html"><span>♙</span> Employees</a><a class="admin-nav-item" href="admin-branches.html"><span>⌖</span> Branches</a><a class="admin-nav-item" href="admin-reports.html"><span>▤</span> Reports</a></nav><a class="admin-nav-item admin-settings-link" href="profile.html"><span>⚙</span> Settings</a></aside>
+      <main class="admin-main">
+        <div class="admin-page-heading"><div><h1>Live Attendance Overview</h1><p>Monitor today&apos;s attendance and location status.</p></div><span class="admin-live-badge"><span></span> Live</span></div>
+        <div class="admin-stat-strip"><div class="admin-stat"><span>Present</span><strong id="monitoring-present">0</strong></div><div class="admin-stat"><span>Late</span><strong id="monitoring-late">0</strong></div><div class="admin-stat"><span>Out of bounds</span><strong id="monitoring-out-of-bounds">0</strong></div><div class="admin-stat"><span>Active employees</span><strong id="monitoring-active">0</strong></div></div>
+        <div class="admin-monitor-grid">
+          <section class="admin-filter-card"><div class="admin-section-title"><h2>Attendance Filters</h2><p>Configure the live overview.</p></div><div class="admin-field"><label for="monitoring-date">Date</label><input class="input" id="monitoring-date" type="date" data-monitoring-date /></div><div class="admin-field"><label for="monitoring-branch">Branch</label><select class="input" id="monitoring-branch" data-monitoring-branch><option value="all">All Branches</option><option value="HQ - Centurion">HQ - Centurion</option><option value="North Ridge">North Ridge</option></select></div><div class="admin-field"><label for="monitoring-status">Status</label><select class="input" id="monitoring-status" data-monitoring-status><option value="all">All statuses</option><option value="Present">Present</option><option value="Late">Late</option><option value="Absent">Absent</option></select></div><button class="primary-btn admin-generate-btn" type="button" data-monitoring-generate>↯ Generate Overview</button><p class="form-feedback" data-monitoring-feedback aria-live="polite"></p><div class="admin-export-box"><span>Export Options</span><div><button class="admin-export-btn" type="button" data-monitoring-export="csv">▤<small>.CSV</small></button><button class="admin-export-btn" type="button" data-monitoring-export="pdf">▧<small>.PDF</small></button><button class="admin-export-btn" type="button" data-monitoring-export="xlsx">▦<small>.XLSX</small></button></div></div></section>
+          <section class="admin-preview-card"><div class="admin-preview-heading"><h2><span class="preview-eye">◉</span> Live Preview: Daily Attendance Summary</h2><span class="admin-row-count" data-monitoring-row-count>Rows: 0</span></div><div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Employee ID</th><th>Name</th><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Hours</th><th>Status</th></tr></thead><tbody data-monitoring-rows></tbody></table></div><div class="admin-table-footer" data-monitoring-footer>Showing 0 rows</div></section>
+        </div>
+      </main>
+    </div>
+    <script src="../assets/js/app.js"></script>
   </body>
-  <script src="../assets/js/app.js"></script>
 </html>

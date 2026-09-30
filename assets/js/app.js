@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isAdminPage = path.includes('admin-');
   const isEmployeePage = /dashboard|attendance-history|profile|offline|out-of-bounds/.test(path);
   const currentRole = localStorage.getItem(currentRoleKey);
+  const currentUser = JSON.parse(localStorage.getItem(currentUserKey) || 'null');
 
   if (isAdminPage && currentRole !== 'admin') {
     window.location.replace('login.html');
@@ -260,6 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const capturedAt = new Date().toISOString();
       const pendingCheckIn = {
         capturedAt,
+        employeeId: currentUser?.id || 'EMP-1001',
+        employeeName: currentUser?.name || 'Demo Employee',
+        branch: currentUser?.branch || 'HQ - Centurion',
         latitude: null,
         longitude: null,
         accuracy: null,
@@ -521,6 +525,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (totalWeekEl) totalWeekEl.textContent = formatDuration(calculateRangeTotal(historyEntries, 'week'));
     if (totalMonthEl) totalMonthEl.textContent = formatDuration(calculateRangeTotal(historyEntries, 'month'));
+  }
+
+  const monitoringRows = document.querySelector('[data-monitoring-rows]');
+  if (monitoringRows) {
+    const monitoringDate = document.querySelector('[data-monitoring-date]');
+    const monitoringBranch = document.querySelector('[data-monitoring-branch]');
+    const monitoringStatus = document.querySelector('[data-monitoring-status]');
+    const monitoringSearch = document.querySelector('[data-monitoring-search]');
+    const monitoringFeedback = document.querySelector('[data-monitoring-feedback]');
+    const monitoringRowCount = document.querySelector('[data-monitoring-row-count]');
+    const monitoringFooter = document.querySelector('[data-monitoring-footer]');
+    const monitoringRecords = () => readHistory().map((record) => ({
+      ...record,
+      employeeId: record.employeeId || 'EMP-1001',
+      employeeName: record.employeeName || 'Demo Employee',
+      branch: record.branch || 'HQ - Centurion',
+      displayStatus: record.status === 'Completed' ? 'Present' : (record.late ? 'Late' : record.status)
+    }));
+    const toDateInputValue = (date) => {
+      const offset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+    };
+
+    if (monitoringDate) monitoringDate.value = toDateInputValue(new Date());
+
+    const renderMonitoring = () => {
+      const selectedDate = monitoringDate ? monitoringDate.value : '';
+      const selectedBranch = monitoringBranch ? monitoringBranch.value : 'all';
+      const selectedStatus = monitoringStatus ? monitoringStatus.value : 'all';
+      const searchTerm = monitoringSearch ? monitoringSearch.value.trim().toLowerCase() : '';
+      const records = monitoringRecords().filter((record) => {
+        const recordDate = toDateInputValue(new Date(record.capturedAt));
+        const matchesDate = !selectedDate || recordDate === selectedDate;
+        const matchesBranch = selectedBranch === 'all' || record.branch === selectedBranch;
+        const matchesStatus = selectedStatus === 'all' || record.displayStatus === selectedStatus;
+        const matchesSearch = !searchTerm || `${record.employeeId} ${record.employeeName}`.toLowerCase().includes(searchTerm);
+        return matchesDate && matchesBranch && matchesStatus && matchesSearch;
+      }).sort((first, second) => new Date(second.capturedAt) - new Date(first.capturedAt));
+
+      const allRecords = monitoringRecords();
+      const presentCount = allRecords.filter((record) => record.displayStatus === 'Present').length;
+      const lateCount = allRecords.filter((record) => record.displayStatus === 'Late').length;
+      const outOfBoundsCount = allRecords.filter((record) => record.inBounds === false).length;
+      const activeCount = allRecords.filter((record) => !record.clockedOutAt).length;
+      const presentEl = document.getElementById('monitoring-present');
+      const lateEl = document.getElementById('monitoring-late');
+      const outOfBoundsEl = document.getElementById('monitoring-out-of-bounds');
+      const activeEl = document.getElementById('monitoring-active');
+      if (presentEl) presentEl.textContent = presentCount;
+      if (lateEl) lateEl.textContent = lateCount;
+      if (outOfBoundsEl) outOfBoundsEl.textContent = outOfBoundsCount;
+      if (activeEl) activeEl.textContent = activeCount;
+
+      monitoringRows.innerHTML = '';
+      records.forEach((record) => {
+        const capturedAt = new Date(record.capturedAt);
+        const clockedOutAt = record.clockedOutAt ? new Date(record.clockedOutAt) : null;
+        const status = record.displayStatus || 'Present';
+        const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${record.employeeId}</td><td>${record.employeeName}</td><td>${capturedAt.toLocaleDateString()}</td><td>${capturedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td><td>${clockedOutAt ? clockedOutAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td><td>${record.workedMilliseconds ? formatDuration(record.workedMilliseconds) : 'Active'}</td><td><span class="monitoring-status ${statusClass}"><span>●</span> ${status}</span></td>`;
+        monitoringRows.appendChild(row);
+      });
+
+      if (!records.length) monitoringRows.innerHTML = '<tr><td class="monitoring-empty" colspan="7">No attendance records match these filters.</td></tr>';
+      if (monitoringRowCount) monitoringRowCount.textContent = `Rows: ${records.length}`;
+      if (monitoringFooter) monitoringFooter.textContent = `Showing ${records.length} of ${monitoringRecords().length} rows`;
+    };
+
+    document.querySelector('[data-monitoring-generate]')?.addEventListener('click', () => {
+      renderMonitoring();
+      if (monitoringFeedback) monitoringFeedback.textContent = 'Live overview updated.';
+    });
+    [monitoringSearch, monitoringDate, monitoringBranch, monitoringStatus].forEach((control) => control?.addEventListener('input', renderMonitoring));
+    document.querySelectorAll('[data-monitoring-export]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const rows = monitoringRecords().map((record) => `${record.employeeId},${record.employeeName},${record.capturedAt},${record.clockedOutAt || ''},${record.displayStatus}`).join('\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([`employee_id,name,clock_in,clock_out,status\n${rows}`], { type: 'text/csv' }));
+        link.download = `attendance-overview.${button.dataset.monitoringExport === 'csv' ? 'csv' : 'csv'}`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        if (monitoringFeedback) monitoringFeedback.textContent = `${button.dataset.monitoringExport.toUpperCase()} export downloaded.`;
+      });
+    });
+    renderMonitoring();
   }
 
   if (exportButton && historyFeedback) {
