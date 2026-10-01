@@ -221,6 +221,8 @@ button, input {
 .admin-nav-item span { width: 16px; text-align: center; font-size: 1rem; }
 .admin-nav-item:hover, .admin-nav-item.active { background: #d6e5ff; color: #174f9e; font-weight: 700; }
 .admin-settings-link { margin-top: auto; }
+.admin-logout-link { color: #8d4b4b; }
+.admin-logout-link:hover { background: #f9e7e7; color: #ad3636; }
 .admin-main { padding: 24px 26px 44px; max-width: 1240px; width: 100%; }
 .admin-page-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 18px; }
 .admin-page-heading h1 { margin: 0; font-size: 1.35rem; }
