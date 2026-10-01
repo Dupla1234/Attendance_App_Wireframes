@@ -1,9 +1,10 @@
-const CACHE_NAME = 'attendancepro-shell-v2';
+const CACHE_NAME = 'attendancepro-shell-v4';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
   './assets/css/styles.css',
   './assets/js/app.js',
+  './assets/js/supabase-config.js',
   './assets/logo.svg',
   './assets/pwa-icon.svg',
   './assets/pwa-icon-180.png',

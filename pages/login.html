@@ -24,6 +24,19 @@
             <input class="input" id="employee-id" type="text" placeholder="EMP-0000" required />
           </div>
 
+          <div class="field" id="department-field" hidden>
+            <label for="employee-department">Department</label>
+            <select class="input" id="employee-department">
+              <option value="">Select your department</option>
+              <option>Operations</option>
+              <option>Sales</option>
+              <option>Finance</option>
+              <option>Human Resources</option>
+              <option>IT Support</option>
+              <option>Other</option>
+            </select>
+          </div>
+
           <div class="field">
             <label for="password">Password</label>
             <input class="input" id="password" type="password" placeholder="••••••••" required />
@@ -39,6 +52,7 @@
 
           <button type="submit" class="primary-btn">Sign In</button>
           <p class="form-feedback" id="login-feedback" aria-live="polite"></p>
+          <p class="device-binding-note">The first successful sign-in registers this browser to one account. Logging out does not remove the registration.</p>
         </form>
 
         <div class="demo-credentials">
@@ -54,6 +68,8 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-config.js"></script>
     <script src="../assets/js/app.js"></script>
   </body>
 </html>

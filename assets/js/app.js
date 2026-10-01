@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
   const currentRoleKey = 'attendancePro.currentRole';
   const currentUserKey = 'attendancePro.currentUser';
+  const deviceAccountKey = 'attendancePro.deviceAccount';
+  const browserDeviceIdKey = 'attendancePro.browserDeviceId';
+  const supabaseConfig = window.ATTENDANCE_SUPABASE_CONFIG || {};
+  const supabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
+  const supabaseClient = window.attendanceSupabaseClient || null;
   const activeShiftKey = 'attendancePro.activeShift';
   const usersKey = 'attendancePro.users';
   const lastLocationAttemptKey = 'attendancePro.lastLocationAttempt';
@@ -178,29 +183,161 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
-    loginForm.addEventListener('submit', (event) => {
+    const employeeIdInput = document.getElementById('employee-id');
+    const departmentField = document.getElementById('department-field');
+    const departmentInput = document.getElementById('employee-department');
+    const loginFeedback = document.getElementById('login-feedback');
+    const submitButton = loginForm.querySelector('[type="submit"]');
+    const readDeviceBinding = () => JSON.parse(localStorage.getItem(deviceAccountKey) || 'null');
+    if (supabaseConfigured) {
+      document.querySelector('label[for="employee-id"]').textContent = 'Work email';
+      employeeIdInput.type = 'email';
+      employeeIdInput.placeholder = 'name@company.com';
+      const demoCredentials = document.querySelector('.demo-credentials');
+      if (demoCredentials) demoCredentials.style.display = 'none';
+      const deviceNote = loginForm.querySelector('.device-binding-note');
+      if (deviceNote) deviceNote.textContent = 'Your first successful sign-in registers this browser to one account. Registration is checked online.';
+    }
+
+    const updateDepartmentField = () => {
+      if (supabaseConfigured) {
+        departmentField.hidden = false;
+        departmentInput.required = false;
+        departmentInput.disabled = false;
+        return;
+      }
+
+      const employeeId = employeeIdInput.value.trim().toUpperCase();
+      const isEmployee = employeeId.startsWith('EMP-');
+      const binding = readDeviceBinding();
+      const isAlreadyBoundEmployee = binding && binding.accountId === employeeId && binding.role === 'employee';
+
+      departmentField.hidden = !isEmployee;
+      departmentInput.required = isEmployee && !isAlreadyBoundEmployee;
+      departmentInput.disabled = Boolean(isAlreadyBoundEmployee);
+      if (isAlreadyBoundEmployee) departmentInput.value = binding.department || '';
+      else if (departmentInput.disabled) departmentInput.disabled = false;
+    };
+
+    employeeIdInput.addEventListener('input', updateDepartmentField);
+    updateDepartmentField();
+
+    loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const employeeId = document.getElementById('employee-id').value.trim().toUpperCase();
+      const loginId = employeeIdInput.value.trim();
       const password = document.getElementById('password').value;
-      const loginFeedback = document.getElementById('login-feedback');
-      const account = defaultUsers.find((user) => user.id === employeeId && user.password === password);
+      if (supabaseConfigured) {
+        if (!supabaseClient) {
+          loginFeedback.textContent = 'The authentication service did not load. Check your connection and try again.';
+          return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Signing in...';
+        try {
+          const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: loginId.toLowerCase(),
+            password
+          });
+          if (authError) throw authError;
+
+          const { data: profile, error: profileError } = await supabaseClient
+            .from('employee_profiles')
+            .select('employee_id, full_name, department, branch, role')
+            .eq('user_id', authData.user.id)
+            .single();
+          if (profileError) throw profileError;
+
+          const department = profile.department || (profile.role === 'employee' ? departmentInput.value.trim() : null);
+          if (profile.role === 'employee' && !department) {
+            await supabaseClient.auth.signOut();
+            loginFeedback.textContent = 'Select your department to complete first-time registration.';
+            return;
+          }
+
+          let deviceId = localStorage.getItem(browserDeviceIdKey);
+          if (!deviceId) {
+            if (!crypto.randomUUID) throw new Error('This browser cannot create a secure device registration. Update the browser and try again.');
+            deviceId = crypto.randomUUID();
+            localStorage.setItem(browserDeviceIdKey, deviceId);
+          }
+
+          const { error: deviceError } = await supabaseClient.rpc('register_current_device', {
+            p_device_id: deviceId,
+            p_department: department
+          });
+          if (deviceError) throw deviceError;
+
+          localStorage.setItem(currentRoleKey, profile.role);
+          localStorage.setItem(currentUserKey, JSON.stringify({
+            name: profile.full_name,
+            id: profile.employee_id,
+            email: authData.user.email,
+            role: profile.role,
+            department: department || null,
+            branch: profile.branch
+          }));
+          window.location.href = profile.role === 'admin' ? 'admin-monitoring.html' : 'dashboard.html';
+        } catch (error) {
+          await supabaseClient.auth.signOut();
+          loginFeedback.textContent = error.message.includes('DEVICE_REGISTERED_TO_ANOTHER_ACCOUNT')
+            ? 'This browser is already registered to another account. Contact your administrator to request a device reset.'
+            : `Sign-in failed: ${error.message}`;
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Sign In';
+        }
+        return;
+      }
+
+      const employeeId = loginId.toUpperCase();
+      const account = [...defaultUsers, ...readUsers()].find((user) => user.id === employeeId && user.password === password);
 
       if (!account) {
         if (loginFeedback) loginFeedback.textContent = 'Invalid demo credentials. Check the ID and password and try again.';
         return;
       }
 
+      const deviceBinding = readDeviceBinding();
+      if (deviceBinding && deviceBinding.accountId !== account.id) {
+        if (loginFeedback) loginFeedback.textContent = `This browser is registered to ${deviceBinding.accountId}. Only that account can sign in on this device.`;
+        return;
+      }
+
+      const department = account.role === 'employee'
+        ? (deviceBinding?.department || departmentInput.value)
+        : null;
+      if (account.role === 'employee' && !department) {
+        if (loginFeedback) loginFeedback.textContent = 'Select your department before registering this browser.';
+        return;
+      }
+
+      if (!deviceBinding) {
+        localStorage.setItem(deviceAccountKey, JSON.stringify({
+          accountId: account.id,
+          role: account.role,
+          department,
+          registeredAt: new Date().toISOString()
+        }));
+      }
+
       const role = account.role;
       localStorage.setItem(currentRoleKey, role);
-      localStorage.setItem(currentUserKey, JSON.stringify({ name: account.name, id: account.id, email: account.email, role: account.role }));
+      localStorage.setItem(currentUserKey, JSON.stringify({ name: account.name, id: account.id, email: account.email, role: account.role, department }));
       window.location.href = role === 'admin' ? 'admin-monitoring.html' : 'dashboard.html';
     });
   }
 
   document.querySelectorAll('[data-logout]').forEach((logoutLink) => {
-    logoutLink.addEventListener('click', () => {
+    logoutLink.addEventListener('click', (event) => {
       localStorage.removeItem(currentRoleKey);
       localStorage.removeItem(currentUserKey);
+      if (supabaseClient) {
+        event.preventDefault();
+        supabaseClient.auth.signOut().finally(() => {
+          window.location.href = logoutLink.href;
+        });
+      }
     });
   });
 
@@ -282,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         employeeId: currentUser?.id || 'EMP-1001',
         employeeName: currentUser?.name || 'Demo Employee',
         branch: currentUser?.branch || 'HQ - Centurion',
+        department: currentUser?.department || null,
         latitude: null,
         longitude: null,
         accuracy: null,
