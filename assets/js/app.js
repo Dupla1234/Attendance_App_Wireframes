@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('../service-worker.js').catch(() => {});
+  }
+
   const pendingCheckInKey = 'attendancePro.pendingCheckIn';
   const attendanceHistoryKey = 'attendancePro.attendanceHistory';
   const currentRoleKey = 'attendancePro.currentRole';
