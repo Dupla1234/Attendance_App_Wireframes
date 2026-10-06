@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentUserKey = 'attendancePro.currentUser';
   const deviceAccountKey = 'attendancePro.deviceAccount';
   const browserDeviceIdKey = 'attendancePro.browserDeviceId';
+  const pendingClockOutKey = 'attendancePro.pendingClockOut';
   const supabaseConfig = window.ATTENDANCE_SUPABASE_CONFIG || {};
   const supabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
   const supabaseClient = window.attendanceSupabaseClient || null;
@@ -35,6 +36,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
   const readUsers = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
   const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
+  const saveAttendanceRemotely = async (record, userId) => {
+    if (!supabaseClient || !userId) throw new Error('Your secure session could not be verified. Sign in again.');
+    const { data, error } = await supabaseClient.from('attendance_records').insert({
+      user_id: userId,
+      employee_id: record.employeeId,
+      employee_name: record.employeeName,
+      department: record.department,
+      branch: record.branch,
+      captured_at: record.capturedAt,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      accuracy: record.accuracy,
+      distance_meters: record.distanceMeters,
+      in_bounds: record.inBounds,
+      late: record.late,
+      late_by_milliseconds: record.lateByMilliseconds,
+      status: record.late ? 'Late' : 'Present'
+    }).select('id').single();
+
+    if (error) throw error;
+    return data.id;
+  };
+  const syncQueuedClockOut = async () => {
+    if (!supabaseConfigured || !supabaseClient || !navigator.onLine) return false;
+    const queuedClockOut = JSON.parse(localStorage.getItem(pendingClockOutKey) || 'null');
+    if (!queuedClockOut) return false;
+
+    try {
+      const { error } = await supabaseClient.from('attendance_records').update({
+        clocked_out_at: queuedClockOut.clockedOutAt,
+        worked_milliseconds: queuedClockOut.workedMilliseconds,
+        status: 'Completed'
+      }).eq('id', queuedClockOut.recordId).eq('user_id', queuedClockOut.userId).select('id').single();
+      if (error) return false;
+      localStorage.removeItem(pendingClockOutKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  syncQueuedClockOut();
+  window.addEventListener('online', syncQueuedClockOut);
 
   const formatDuration = (milliseconds) => {
     const totalMinutes = Math.max(0, Math.floor(milliseconds / 60000));
@@ -273,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             name: profile.full_name,
             id: profile.employee_id,
             email: authData.user.email,
+            authUserId: authData.user.id,
             role: profile.role,
             department: department || null,
             branch: profile.branch
@@ -391,6 +435,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (activeShift) {
         const endedAt = new Date().toISOString();
         const workedMilliseconds = new Date(endedAt).getTime() - new Date(activeShift.startedAt).getTime();
+        if (supabaseConfigured && !navigator.onLine && activeShift.supabaseRecordId) {
+          localStorage.setItem(pendingClockOutKey, JSON.stringify({
+            recordId: activeShift.supabaseRecordId,
+            userId: currentUser?.authUserId,
+            clockedOutAt: endedAt,
+            workedMilliseconds
+          }));
+        } else if (supabaseConfigured) {
+          try {
+            const { error } = await supabaseClient.from('attendance_records').update({
+              clocked_out_at: endedAt,
+              worked_milliseconds: workedMilliseconds,
+              status: 'Completed'
+            }).eq('id', activeShift.supabaseRecordId).eq('user_id', currentUser.authUserId).select('id').single();
+            if (error) throw error;
+          } catch (error) {
+            if (clockFeedback) clockFeedback.textContent = `Could not sync clock-out: ${error.message}. Your shift remains active; try again when online.`;
+            return;
+          }
+        }
+
         const history = readHistory();
         history.unshift({
           capturedAt: activeShift.startedAt,
@@ -476,15 +541,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters, late: pendingCheckIn.late, lateByMilliseconds: pendingCheckIn.lateByMilliseconds };
+      let supabaseRecordId = null;
+      if (supabaseConfigured) {
+        clockButton.disabled = true;
+        if (clockFeedback) clockFeedback.textContent = 'Saving your attendance for the admin dashboard...';
+        try {
+          supabaseRecordId = await saveAttendanceRemotely(pendingCheckIn, currentUser?.authUserId);
+        } catch (error) {
+          clockButton.disabled = false;
+          if (clockFeedback) clockFeedback.textContent = `Clock-in was not recorded: ${error.message}. Check your connection and try again.`;
+          return;
+        }
+        clockButton.disabled = false;
+      }
+
+      activeShift = {
+        startedAt: pendingCheckIn.capturedAt,
+        distanceMeters: pendingCheckIn.distanceMeters,
+        late: pendingCheckIn.late,
+        lateByMilliseconds: pendingCheckIn.lateByMilliseconds,
+        supabaseRecordId
+      };
       localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
 
       const history = readHistory();
-      history.unshift({ ...pendingCheckIn, status: 'Present' });
+      history.unshift({ ...pendingCheckIn, status: pendingCheckIn.late ? 'Late' : 'Present' });
       saveHistory(history);
 
       renderShift();
-      if (clockFeedback) clockFeedback.textContent = `Clock-in recorded ${pendingCheckIn.distanceMeters}m from the pinned office.`;
+      if (clockFeedback) clockFeedback.textContent = `Clock-in recorded ${pendingCheckIn.distanceMeters}m from the pinned office${supabaseRecordId ? ' and shared with the admin dashboard.' : '.'}`;
     });
   }
 
@@ -516,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordDistance) recordDistance.textContent = pendingCheckIn.distanceMeters === null ? 'Not measured' : `${pendingCheckIn.distanceMeters}m`;
       }
 
-      connectionButton.addEventListener('click', () => {
+      connectionButton.addEventListener('click', async () => {
         if (!navigator.onLine) {
           connectionFeedback.textContent = 'Still offline. The captured time and location remain safely queued.';
           return;
@@ -527,10 +612,25 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        let supabaseRecordId = null;
+        if (supabaseConfigured) {
+          try {
+            supabaseRecordId = await saveAttendanceRemotely(pendingCheckIn, currentUser?.authUserId);
+          } catch (error) {
+            connectionFeedback.textContent = `The queued check-in could not sync: ${error.message}. It remains queued.`;
+            return;
+          }
+        }
+
         if (queueStatus) queueStatus.textContent = 'Confirmed';
         if (queueStatus) queueStatus.className = 'badge success';
         if (recordVerification) recordVerification.textContent = 'Confirmed and added to attendance history';
-        saveHistory([{ ...pendingCheckIn, status: 'Present' }, ...readHistory()]);
+        saveHistory([{ ...pendingCheckIn, status: pendingCheckIn.late ? 'Late' : 'Present' }, ...readHistory()]);
+        const activeShift = JSON.parse(localStorage.getItem(activeShiftKey) || 'null');
+        if (activeShift && activeShift.startedAt === pendingCheckIn.capturedAt) {
+          activeShift.supabaseRecordId = supabaseRecordId;
+          localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
+        }
         localStorage.removeItem(pendingCheckInKey);
         connectionButton.disabled = true;
         connectionButton.textContent = 'Check-in confirmed';
@@ -709,10 +809,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const monitoringFeedback = document.querySelector('[data-monitoring-feedback]');
     const monitoringRowCount = document.querySelector('[data-monitoring-row-count]');
     const monitoringFooter = document.querySelector('[data-monitoring-footer]');
-    const monitoringRecords = () => readHistory().map((record) => ({
+    let sharedAttendanceRecords = null;
+    const monitoringRecords = () => (sharedAttendanceRecords || readHistory()).map((record) => ({
       ...record,
-      employeeId: record.employeeId || 'EMP-1001',
-      employeeName: record.employeeName || 'Demo Employee',
+      capturedAt: record.capturedAt || record.captured_at,
+      clockedOutAt: record.clockedOutAt || record.clocked_out_at,
+      workedMilliseconds: record.workedMilliseconds ?? record.worked_milliseconds,
+      distanceMeters: record.distanceMeters ?? record.distance_meters,
+      inBounds: record.inBounds ?? record.in_bounds,
+      lateByMilliseconds: record.lateByMilliseconds ?? record.late_by_milliseconds,
+      employeeId: record.employeeId || record.employee_id || 'EMP-1001',
+      employeeName: record.employeeName || record.employee_name || 'Demo Employee',
       branch: record.branch || 'HQ - Centurion',
       displayStatus: record.status === 'Completed' ? 'Present' : (record.late ? 'Late' : record.status)
     }));
@@ -784,6 +891,37 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
     renderMonitoring();
+
+    if (supabaseConfigured && supabaseClient && currentRole === 'admin') {
+      const loadSharedAttendance = async () => {
+        const { data, error } = await supabaseClient
+          .from('attendance_records')
+          .select('*')
+          .order('captured_at', { ascending: false });
+        if (error) throw error;
+        sharedAttendanceRecords = data || [];
+        renderMonitoring();
+      };
+
+      if (monitoringFeedback) monitoringFeedback.textContent = 'Connecting to shared attendance...';
+      loadSharedAttendance().then(() => {
+        if (monitoringFeedback) monitoringFeedback.textContent = 'Live attendance connected.';
+      }).catch((error) => {
+        if (monitoringFeedback) monitoringFeedback.textContent = `Could not load shared attendance: ${error.message}`;
+      });
+
+      supabaseClient.channel('attendance-records-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
+          loadSharedAttendance().catch((error) => {
+            if (monitoringFeedback) monitoringFeedback.textContent = `Live refresh failed: ${error.message}`;
+          });
+        })
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' && monitoringFeedback) {
+            monitoringFeedback.textContent = 'Live updates are unavailable. Check Supabase Realtime settings.';
+          }
+        });
+    }
   }
 
   if (exportButton && historyFeedback) {

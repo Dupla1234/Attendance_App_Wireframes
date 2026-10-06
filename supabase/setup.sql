@@ -14,8 +14,36 @@ create table if not exists public.device_registrations (
   registered_at timestamptz not null default now()
 );
 
+create table if not exists public.attendance_records (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  employee_id text not null,
+  employee_name text not null,
+  department text,
+  branch text not null,
+  captured_at timestamptz not null,
+  clocked_out_at timestamptz,
+  worked_milliseconds bigint not null default 0,
+  latitude double precision,
+  longitude double precision,
+  accuracy double precision,
+  distance_meters integer,
+  in_bounds boolean not null default false,
+  late boolean not null default false,
+  late_by_milliseconds bigint not null default 0,
+  status text not null default 'Present'
+    check (status in ('Present', 'Late', 'Completed')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists attendance_records_captured_at_idx
+  on public.attendance_records (captured_at desc);
+create index if not exists attendance_records_user_id_idx
+  on public.attendance_records (user_id);
+
 alter table public.employee_profiles enable row level security;
 alter table public.device_registrations enable row level security;
+alter table public.attendance_records enable row level security;
 
 drop policy if exists "Users can read their own profile" on public.employee_profiles;
 create policy "Users can read their own profile"
@@ -26,6 +54,42 @@ create policy "Users can read their own profile"
 revoke all on public.employee_profiles from anon, authenticated;
 grant select on public.employee_profiles to authenticated;
 revoke all on public.device_registrations from anon, authenticated;
+
+drop policy if exists "Employees can read their attendance" on public.attendance_records;
+create policy "Employees can read their attendance"
+  on public.attendance_records for select
+  to authenticated
+  using (
+    auth.uid() = user_id
+    or exists (
+      select 1 from public.employee_profiles profile
+      where profile.user_id = auth.uid() and profile.role = 'admin'
+    )
+  );
+
+drop policy if exists "Employees can clock in for themselves" on public.attendance_records;
+create policy "Employees can clock in for themselves"
+  on public.attendance_records for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Employees can clock out their own shift" on public.attendance_records;
+create policy "Employees can clock out their own shift"
+  on public.attendance_records for update
+  to authenticated
+  using (auth.uid() = user_id and clocked_out_at is null)
+  with check (auth.uid() = user_id);
+
+revoke all on public.attendance_records from anon, authenticated;
+grant select, insert, update on public.attendance_records to authenticated;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.attendance_records;
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 create or replace function public.register_current_device(
   p_device_id uuid,
