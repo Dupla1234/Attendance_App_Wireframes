@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendancepro-shell-v5';
+const CACHE_NAME = 'attendancepro-shell-v9';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',

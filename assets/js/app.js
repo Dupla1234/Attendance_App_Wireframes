@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const deviceAccountKey = 'attendancePro.deviceAccount';
   const browserDeviceIdKey = 'attendancePro.browserDeviceId';
   const pendingClockOutKey = 'attendancePro.pendingClockOut';
+  const adminMonitoringSettingsKey = 'attendancePro.adminMonitoringSettings';
   const supabaseConfig = window.ATTENDANCE_SUPABASE_CONFIG || {};
   const supabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
   const supabaseClient = window.attendanceSupabaseClient || null;
@@ -809,7 +810,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const monitoringFeedback = document.querySelector('[data-monitoring-feedback]');
     const monitoringRowCount = document.querySelector('[data-monitoring-row-count]');
     const monitoringFooter = document.querySelector('[data-monitoring-footer]');
+    const settingsDialog = document.querySelector('[data-admin-settings-dialog]');
+    const settingsForm = document.querySelector('[data-admin-settings-form]');
+    const liveUpdatesSetting = document.querySelector('[data-setting-live-updates]');
+    const dateRangeSetting = document.querySelector('[data-setting-date-range]');
+    const notificationsSetting = document.querySelector('[data-setting-notifications]');
+    const settingsFeedback = document.querySelector('[data-admin-settings-feedback]');
+    const monitoringSettings = {
+      liveUpdates: true,
+      defaultDateRange: 'today',
+      clockInNotifications: false,
+      ...JSON.parse(localStorage.getItem(adminMonitoringSettingsKey) || '{}')
+    };
     let sharedAttendanceRecords = null;
+    let attendanceChannel = null;
+    let loadSharedAttendance = null;
     const monitoringRecords = () => (sharedAttendanceRecords || readHistory()).map((record) => ({
       ...record,
       capturedAt: record.capturedAt || record.captured_at,
@@ -828,7 +843,76 @@ document.addEventListener('DOMContentLoaded', () => {
       return new Date(date.getTime() - offset).toISOString().slice(0, 10);
     };
 
-    if (monitoringDate) monitoringDate.value = toDateInputValue(new Date());
+    if (monitoringDate) monitoringDate.value = monitoringSettings.defaultDateRange === 'all' ? '' : toDateInputValue(new Date());
+    if (liveUpdatesSetting) liveUpdatesSetting.checked = monitoringSettings.liveUpdates;
+    if (dateRangeSetting) dateRangeSetting.value = monitoringSettings.defaultDateRange;
+    if (notificationsSetting) notificationsSetting.checked = monitoringSettings.clockInNotifications;
+
+    const updateRealtimeSubscription = () => {
+      if (!supabaseConfigured || !supabaseClient || currentRole !== 'admin') return;
+      if (!monitoringSettings.liveUpdates) {
+        if (attendanceChannel) supabaseClient.removeChannel(attendanceChannel);
+        attendanceChannel = null;
+        if (monitoringFeedback) monitoringFeedback.textContent = 'Live updates paused. Use Generate Overview to refresh.';
+        return;
+      }
+      if (attendanceChannel || !loadSharedAttendance) return;
+
+      attendanceChannel = supabaseClient.channel('attendance-records-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, (payload) => {
+          if (payload.eventType === 'INSERT' && monitoringSettings.clockInNotifications && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Employee clocked in', {
+              body: `${payload.new.employee_name} (${payload.new.employee_id})${payload.new.late ? ' clocked in late.' : ' is now present.'}`
+            });
+          }
+          loadSharedAttendance().catch((error) => {
+            if (monitoringFeedback) monitoringFeedback.textContent = `Live refresh failed: ${error.message}`;
+          });
+        })
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' && monitoringFeedback) {
+            monitoringFeedback.textContent = 'Live updates are unavailable. Check Supabase Realtime settings.';
+          }
+        });
+    };
+
+    document.addEventListener('click', (event) => {
+      const settingsTrigger = event.target.closest('[data-open-admin-settings]');
+      if (!settingsTrigger) return;
+      event.preventDefault();
+      settingsDialog?.showModal();
+    });
+    document.querySelectorAll('[data-close-admin-settings]').forEach((button) => {
+      button.addEventListener('click', () => settingsDialog?.close());
+    });
+
+    settingsForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      let notificationsEnabled = notificationsSetting.checked;
+      let notificationMessage = '';
+      if (notificationsEnabled && !('Notification' in window)) {
+        notificationsEnabled = false;
+        notificationMessage = 'This browser does not support notifications.';
+      } else if (notificationsEnabled && Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        notificationsEnabled = permission === 'granted';
+        if (!notificationsEnabled) notificationMessage = 'Notification permission was not granted.';
+      }
+
+      monitoringSettings.liveUpdates = liveUpdatesSetting.checked;
+      monitoringSettings.defaultDateRange = dateRangeSetting.value;
+      monitoringSettings.clockInNotifications = notificationsEnabled;
+      localStorage.setItem(adminMonitoringSettingsKey, JSON.stringify(monitoringSettings));
+      if (notificationsSetting) notificationsSetting.checked = notificationsEnabled;
+      if (monitoringDate) monitoringDate.value = monitoringSettings.defaultDateRange === 'all' ? '' : toDateInputValue(new Date());
+      renderMonitoring();
+      updateRealtimeSubscription();
+      if (settingsFeedback) {
+        settingsFeedback.textContent = notificationMessage || 'Settings saved on this device.';
+      }
+      if (monitoringFeedback) monitoringFeedback.textContent = notificationMessage || 'Settings saved on this device.';
+      settingsDialog?.close();
+    });
 
     const renderMonitoring = () => {
       const selectedDate = monitoringDate ? monitoringDate.value : '';
@@ -893,7 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMonitoring();
 
     if (supabaseConfigured && supabaseClient && currentRole === 'admin') {
-      const loadSharedAttendance = async () => {
+      loadSharedAttendance = async () => {
         const { data, error } = await supabaseClient
           .from('attendance_records')
           .select('*')
@@ -909,18 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch((error) => {
         if (monitoringFeedback) monitoringFeedback.textContent = `Could not load shared attendance: ${error.message}`;
       });
-
-      supabaseClient.channel('attendance-records-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_records' }, () => {
-          loadSharedAttendance().catch((error) => {
-            if (monitoringFeedback) monitoringFeedback.textContent = `Live refresh failed: ${error.message}`;
-          });
-        })
-        .subscribe((status) => {
-          if (status === 'CHANNEL_ERROR' && monitoringFeedback) {
-            monitoringFeedback.textContent = 'Live updates are unavailable. Check Supabase Realtime settings.';
-          }
-        });
+      updateRealtimeSubscription();
     }
   }
 

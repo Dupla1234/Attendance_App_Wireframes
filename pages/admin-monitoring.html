@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="../assets/css/styles.css" />
   </head>
   <body class="admin-workspace">
-    <header class="admin-topbar"><div class="admin-topbar-inner"><div class="admin-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search attendance..." aria-label="Search attendance" data-monitoring-search /></div><div class="admin-utilities"><button type="button" class="icon-button" title="Notifications" aria-label="Notifications">♧</button><button type="button" class="icon-button" title="Settings" aria-label="Settings">⚙</button><div class="admin-avatar">AD</div></div></div></header>
+    <header class="admin-topbar"><div class="admin-topbar-inner"><div class="admin-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search attendance..." aria-label="Search attendance" data-monitoring-search /></div><div class="admin-utilities"><button type="button" class="icon-button" title="Notifications" aria-label="Notifications">♧</button><button type="button" class="icon-button" title="Settings" aria-label="Settings" aria-haspopup="dialog" data-open-admin-settings>⚙</button><div class="admin-avatar">AD</div></div></div></header>
     <div class="admin-shell">
-      <aside class="admin-sidebar"><div class="admin-brand"><strong>AttendanceAdmin</strong><span>Enterprise Portal</span></div><nav class="admin-nav" aria-label="Admin navigation"><a class="admin-nav-item active" href="admin-monitoring.html"><span>▦</span> Overview</a><a class="admin-nav-item" href="admin-employees.html"><span>♙</span> Employees</a><a class="admin-nav-item" href="admin-branches.html"><span>⌖</span> Branches</a><a class="admin-nav-item" href="admin-reports.html"><span>▤</span> Reports</a></nav><a class="admin-nav-item admin-settings-link" href="profile.html"><span>⚙</span> Settings</a><a class="admin-nav-item admin-logout-link" href="login.html" data-logout><span>↪</span> Log out</a></aside>
+      <aside class="admin-sidebar"><div class="admin-brand"><strong>AttendanceAdmin</strong><span>Enterprise Portal</span></div><nav class="admin-nav" aria-label="Admin navigation"><a class="admin-nav-item active" href="admin-monitoring.html"><span>▦</span> Overview</a><a class="admin-nav-item" href="admin-employees.html"><span>♙</span> Employees</a><a class="admin-nav-item" href="admin-branches.html"><span>⌖</span> Branches</a><a class="admin-nav-item" href="admin-reports.html"><span>▤</span> Reports</a></nav><button class="admin-nav-item admin-settings-link" type="button" data-open-admin-settings><span>⚙</span> Settings</button><a class="admin-nav-item admin-logout-link" href="login.html" data-logout><span>↪</span> Log out</a></aside>
       <main class="admin-main">
         <div class="admin-page-heading"><div><h1>Live Attendance Overview</h1><p>Monitor today&apos;s attendance and location status.</p></div><span class="admin-live-badge"><span></span> Live</span></div>
         <div class="admin-stat-strip"><div class="admin-stat"><span>Present</span><strong id="monitoring-present">0</strong></div><div class="admin-stat"><span>Late</span><strong id="monitoring-late">0</strong></div><div class="admin-stat"><span>Out of bounds</span><strong id="monitoring-out-of-bounds">0</strong></div><div class="admin-stat"><span>Active employees</span><strong id="monitoring-active">0</strong></div></div>
@@ -22,6 +22,16 @@
         </div>
       </main>
     </div>
+    <dialog class="admin-settings-dialog" data-admin-settings-dialog aria-labelledby="admin-settings-title">
+      <form data-admin-settings-form>
+        <div class="admin-settings-heading"><div><h2 id="admin-settings-title">Overview Settings</h2><p>Choose how this dashboard behaves.</p></div><button class="icon-button" type="button" aria-label="Close settings" data-close-admin-settings>×</button></div>
+        <label class="admin-setting-row"><span><strong>Live updates</strong><small>Refresh the overview when an employee clocks in or out. Requires Supabase setup.</small></span><input type="checkbox" data-setting-live-updates /></label>
+        <label class="admin-setting-row"><span><strong>Default date filter</strong><small>Choose which attendance dates appear when the page opens.</small></span><select class="input" data-setting-date-range><option value="today">Today</option><option value="all">All dates</option></select></label>
+        <label class="admin-setting-row"><span><strong>Clock-in notifications</strong><small>Show a browser notification for new employee clock-ins.</small></span><input type="checkbox" data-setting-notifications /></label>
+        <p class="form-feedback admin-settings-feedback" data-admin-settings-feedback aria-live="polite"></p>
+        <div class="admin-settings-actions"><button class="secondary-btn" type="button" data-close-admin-settings>Cancel</button><button class="primary-btn" type="submit">Save settings</button></div>
+      </form>
+    </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-config.js"></script>
     <script src="../assets/js/app.js"></script>
