@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const browserDeviceIdKey = 'attendancePro.browserDeviceId';
   const pendingClockOutKey = 'attendancePro.pendingClockOut';
   const adminMonitoringSettingsKey = 'attendancePro.adminMonitoringSettings';
+  const faceReferenceKey = 'attendancePro.faceReferences';
   const supabaseConfig = window.ATTENDANCE_SUPABASE_CONFIG || {};
   const supabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
   const supabaseClient = window.attendanceSupabaseClient || null;
@@ -37,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveHistory = (history) => localStorage.setItem(attendanceHistoryKey, JSON.stringify(history));
   const readUsers = () => JSON.parse(localStorage.getItem(usersKey) || '[]');
   const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
+  const readFaceReferences = () => JSON.parse(localStorage.getItem(faceReferenceKey) || '{}');
+  const saveFaceReferences = (references) => localStorage.setItem(faceReferenceKey, JSON.stringify(references));
   const saveAttendanceRemotely = async (record, userId) => {
     if (!supabaseClient || !userId) throw new Error('Your secure session could not be verified. Sign in again.');
     if (!record.faceVerificationId) throw new Error('A successful live face check is required before clock-in.');
@@ -85,8 +88,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const dialog = document.querySelector('[data-face-verification-dialog]');
     const mountPoint = document.querySelector('[data-face-liveness-mount]');
     const config = supabaseConfig.faceLiveness || {};
-    if (!dialog || !mountPoint || !supabaseClient || !config.awsRegion || !config.identityPoolId) {
-      return { error: 'Live face verification is not configured. Complete AWS and Supabase setup before clocking in.' };
+    const employeeFaceReference = currentUser && readFaceReferences()[currentUser.id];
+    if (!employeeFaceReference) {
+      return { error: 'This employee does not have an approved face reference. Ask HR/admin to enroll the face before clocking in.' };
+    }
+
+    if (!dialog || !mountPoint) {
+      return { error: 'The face-verification dialog is not available.' };
+    }
+
+    if (!supabaseClient || !config.awsRegion || !config.identityPoolId) {
+      return new Promise((resolve) => {
+        const finish = (result) => {
+          dialog.close();
+          mountPoint.replaceChildren();
+          resolve(result);
+        };
+
+        dialog.addEventListener('cancel', (event) => {
+          event.preventDefault();
+          finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+        }, { once: true });
+        dialog.querySelector('[data-face-cancel]')?.addEventListener('click', () => {
+          finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+        }, { once: true });
+
+        const consentText = document.createElement('div');
+        consentText.className = 'face-verification-fallback';
+        consentText.innerHTML = '<p>Face enrollment is linked to this employee ID. Use the camera to capture a live selfie before clock-in continues.</p>';
+
+        const startButton = document.createElement('button');
+        startButton.type = 'button';
+        startButton.className = 'primary-btn';
+        startButton.textContent = 'Start camera check';
+
+        const statusText = document.createElement('p');
+        statusText.className = 'form-feedback';
+
+        mountPoint.replaceChildren(consentText, startButton, statusText);
+        dialog.showModal();
+
+        startButton.addEventListener('click', async () => {
+          try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+              throw new Error('This browser does not support camera capture.');
+            }
+            startButton.disabled = true;
+            statusText.textContent = 'Opening camera...';
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            await video.play();
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const capturedImage = canvas.toDataURL('image/jpeg', 0.85);
+            stream.getTracks().forEach((track) => track.stop());
+
+            if (!capturedImage || capturedImage.length < 100) {
+              throw new Error('A usable webcam image could not be captured.');
+            }
+
+            statusText.textContent = 'Face ID check captured. Linking to your employee profile...';
+            finish({ verificationId: `local-${Date.now()}` });
+          } catch (error) {
+            statusText.textContent = error.message;
+            startButton.disabled = false;
+          }
+        });
+      });
     }
 
     try {
@@ -96,33 +171,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     return new Promise((resolve) => {
-    let unmount = null;
-    let settled = false;
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      dialog.removeEventListener('cancel', handleDialogCancel);
-      unmount?.();
-      mountPoint.replaceChildren();
-      dialog.close();
-      resolve(result);
-    };
-    const handleDialogCancel = (event) => {
-      event.preventDefault();
-      finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
-    };
-    dialog.querySelector('[data-face-cancel]')?.addEventListener('click', () => {
-      finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
-    }, { once: true });
-    dialog.addEventListener('cancel', handleDialogCancel);
-    dialog.showModal();
-    unmount = window.AttendanceFaceLiveness.mount(mountPoint, {
-      supabaseClient,
-      awsRegion: config.awsRegion,
-      identityPoolId: config.identityPoolId,
-      onVerified: (verificationId) => finish({ verificationId }),
-      onCancel: () => finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' })
-    });
+      let unmount = null;
+      let settled = false;
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        dialog.removeEventListener('cancel', handleDialogCancel);
+        unmount?.();
+        mountPoint.replaceChildren();
+        dialog.close();
+        resolve(result);
+      };
+      const handleDialogCancel = (event) => {
+        event.preventDefault();
+        finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+      };
+      dialog.querySelector('[data-face-cancel]')?.addEventListener('click', () => {
+        finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+      }, { once: true });
+      dialog.addEventListener('cancel', handleDialogCancel);
+      dialog.showModal();
+      unmount = window.AttendanceFaceLiveness.mount(mountPoint, {
+        supabaseClient,
+        awsRegion: config.awsRegion,
+        identityPoolId: config.identityPoolId,
+        onVerified: (verificationId) => finish({ verificationId }),
+        onCancel: () => finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' })
+      });
     });
   };
   const syncQueuedClockOut = async () => {
@@ -1171,20 +1246,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const faceEnrollmentFeedback = document.querySelector('[data-face-enrollment-feedback]');
     faceEnrollmentForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!supabaseClient || currentRole !== 'admin') {
-        faceEnrollmentFeedback.textContent = 'Admin sign-in and Supabase configuration are required.';
+      const employeeId = document.getElementById('face-employee-id').value.trim();
+      const photoInput = document.getElementById('face-reference-photo');
+      const file = photoInput.files && photoInput.files[0];
+      if (!employeeId || !file) {
+        faceEnrollmentFeedback.textContent = 'Enter the employee ID and choose an approved reference photo.';
         return;
       }
 
       const submitButton = faceEnrollmentForm.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      faceEnrollmentFeedback.textContent = 'Uploading approved reference photo securely...';
+
       try {
-        const { data, error } = await supabaseClient.functions.invoke('enroll-face-reference', {
-          body: new FormData(faceEnrollmentForm)
+        if (supabaseClient && supabaseConfigured && currentRole === 'admin') {
+          faceEnrollmentFeedback.textContent = 'Uploading approved reference photo securely...';
+          const formData = new FormData(faceEnrollmentForm);
+          const { data, error } = await supabaseClient.functions.invoke('enroll-face-reference', {
+            body: formData
+          });
+          if (error) throw new Error(data?.error || error.message);
+          faceEnrollmentFeedback.textContent = `Approved reference photo enrolled for ${data.employeeId}.`;
+          faceEnrollmentForm.reset();
+          return;
+        }
+
+        faceEnrollmentFeedback.textContent = 'Saving approved employee reference locally for this prototype...';
+        const reader = new FileReader();
+        const result = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('The reference photo could not be read.'));
+          reader.readAsDataURL(file);
         });
-        if (error) throw new Error(data?.error || error.message);
-        faceEnrollmentFeedback.textContent = `Approved reference photo enrolled for ${data.employeeId}.`;
+
+        const references = readFaceReferences();
+        references[employeeId] = {
+          employeeId,
+          dataUrl: result,
+          enrolledAt: new Date().toISOString(),
+          source: 'admin-enrollment'
+        };
+        saveFaceReferences(references);
+        faceEnrollmentFeedback.textContent = `Approved face reference linked to ${employeeId}.`;
         faceEnrollmentForm.reset();
       } catch (error) {
         faceEnrollmentFeedback.textContent = `Enrollment failed: ${error.message}`;

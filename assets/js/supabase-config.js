@@ -1,9 +1,9 @@
 window.ATTENDANCE_SUPABASE_CONFIG = {
-  url: '',
-  anonKey: '',
+  url: 'https://YOUR_PROJECT_REF.supabase.co',
+  anonKey: 'YOUR_SUPABASE_ANON_KEY',
   faceLiveness: {
-    awsRegion: '',
-    identityPoolId: ''
+    awsRegion: 'YOUR_AWS_REGION',
+    identityPoolId: 'YOUR_COGNITO_IDENTITY_POOL_ID'
   }
 };
 
