@@ -1,6 +1,10 @@
 window.ATTENDANCE_SUPABASE_CONFIG = {
   url: '',
-  anonKey: ''
+  anonKey: '',
+  faceLiveness: {
+    awsRegion: '',
+    identityPoolId: ''
+  }
 };
 
 const supabaseConfig = window.ATTENDANCE_SUPABASE_CONFIG;

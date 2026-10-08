@@ -34,6 +34,16 @@
         <p class="form-feedback" id="user-form-feedback" aria-live="polite"></p>
       </section>
 
+      <section class="panel face-enrollment-panel" style="margin-top:24px">
+        <div class="section-heading"><div><h2>Approved Face Reference</h2><p>HR/admin uploads a verified employee photo. Employees cannot set their own reference face.</p></div></div>
+        <form class="face-enrollment-form" data-face-enrollment-form>
+          <div class="field"><label for="face-employee-id">Employee ID</label><input class="input" id="face-employee-id" name="employeeId" required placeholder="EMP-0000" /></div>
+          <div class="field"><label for="face-reference-photo">Approved reference photo</label><input class="input" id="face-reference-photo" name="photo" type="file" accept="image/jpeg,image/png" required /><small>JPEG or PNG, maximum 5 MB. Upload only with the employee&apos;s informed consent.</small></div>
+          <button class="primary-btn" type="submit">Enroll approved photo</button>
+        </form>
+        <p class="form-feedback" data-face-enrollment-feedback aria-live="polite"></p>
+      </section>
+
       <section class="panel" style="margin-top:24px"><div class="section-heading"><div><h2>Users and rights</h2><p>Stored locally for this prototype. Default demo accounts are listed below.</p></div></div><div class="table-scroll"><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Branch</th><th>Role</th><th>Rights</th><th>Action</th></tr></thead><tbody id="user-records"><tr><td>Demo Employee</td><td>EMP-1001</td><td>HQ - Centurion</td><td><span class="badge success">employee</span></td><td>dashboard, history, profile</td><td>Default account</td></tr><tr><td>Demo Administrator</td><td>ADMIN-0001</td><td>All branches</td><td><span class="badge warning">admin</span></td><td>dashboard, history, profile, reports, employees</td><td>Default account</td></tr></tbody></table></div></section>
     </main>
   </body>

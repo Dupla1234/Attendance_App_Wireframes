@@ -1,0 +1,8 @@
+[functions.create-face-session]
+verify_jwt = true
+
+[functions.verify-face-session]
+verify_jwt = true
+
+[functions.enroll-face-reference]
+verify_jwt = true

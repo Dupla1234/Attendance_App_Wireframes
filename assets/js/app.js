@@ -39,25 +39,91 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveUsers = (users) => localStorage.setItem(usersKey, JSON.stringify(users));
   const saveAttendanceRemotely = async (record, userId) => {
     if (!supabaseClient || !userId) throw new Error('Your secure session could not be verified. Sign in again.');
-    const { data, error } = await supabaseClient.from('attendance_records').insert({
-      user_id: userId,
-      employee_id: record.employeeId,
-      employee_name: record.employeeName,
-      department: record.department,
-      branch: record.branch,
-      captured_at: record.capturedAt,
-      latitude: record.latitude,
-      longitude: record.longitude,
-      accuracy: record.accuracy,
-      distance_meters: record.distanceMeters,
-      in_bounds: record.inBounds,
-      late: record.late,
-      late_by_milliseconds: record.lateByMilliseconds,
-      status: record.late ? 'Late' : 'Present'
-    }).select('id').single();
+    if (!record.faceVerificationId) throw new Error('A successful live face check is required before clock-in.');
+    const { data, error } = await supabaseClient.rpc('clock_in_with_face', {
+      p_face_verification_id: record.faceVerificationId,
+      p_captured_at: record.capturedAt,
+      p_latitude: record.latitude,
+      p_longitude: record.longitude,
+      p_accuracy: record.accuracy,
+      p_distance_meters: record.distanceMeters,
+      p_in_bounds: record.inBounds,
+      p_late: record.late,
+      p_late_by_milliseconds: record.lateByMilliseconds
+    });
 
     if (error) throw error;
-    return data.id;
+    return data;
+  };
+  let faceLivenessAssetsPromise;
+  const loadFaceLivenessAssets = () => {
+    if (window.AttendanceFaceLiveness) return Promise.resolve();
+    if (!faceLivenessAssetsPromise) {
+      const scriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = '../assets/js/face-build/face-liveness.iife.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Could not load the face-verification interface.'));
+        document.head.appendChild(script);
+      });
+      const stylePromise = new Promise((resolve, reject) => {
+        const stylesheet = document.createElement('link');
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = '../assets/js/face-build/style.css';
+        stylesheet.onload = resolve;
+        stylesheet.onerror = () => reject(new Error('Could not load face-verification styles.'));
+        document.head.appendChild(stylesheet);
+      });
+      faceLivenessAssetsPromise = Promise.all([scriptPromise, stylePromise]).catch((error) => {
+        faceLivenessAssetsPromise = null;
+        throw error;
+      });
+    }
+    return faceLivenessAssetsPromise;
+  };
+  const openFaceVerification = async () => {
+    const dialog = document.querySelector('[data-face-verification-dialog]');
+    const mountPoint = document.querySelector('[data-face-liveness-mount]');
+    const config = supabaseConfig.faceLiveness || {};
+    if (!dialog || !mountPoint || !supabaseClient || !config.awsRegion || !config.identityPoolId) {
+      return { error: 'Live face verification is not configured. Complete AWS and Supabase setup before clocking in.' };
+    }
+
+    try {
+      await loadFaceLivenessAssets();
+    } catch (error) {
+      return { error: error.message };
+    }
+
+    return new Promise((resolve) => {
+    let unmount = null;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      dialog.removeEventListener('cancel', handleDialogCancel);
+      unmount?.();
+      mountPoint.replaceChildren();
+      dialog.close();
+      resolve(result);
+    };
+    const handleDialogCancel = (event) => {
+      event.preventDefault();
+      finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+    };
+    dialog.querySelector('[data-face-cancel]')?.addEventListener('click', () => {
+      finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' });
+    }, { once: true });
+    dialog.addEventListener('cancel', handleDialogCancel);
+    dialog.showModal();
+    unmount = window.AttendanceFaceLiveness.mount(mountPoint, {
+      supabaseClient,
+      awsRegion: config.awsRegion,
+      identityPoolId: config.identityPoolId,
+      onVerified: (verificationId) => finish({ verificationId }),
+      onCancel: () => finish({ error: 'Face verification was cancelled. Clock-in was not recorded.' })
+    });
+    });
   };
   const syncQueuedClockOut = async () => {
     if (!supabaseConfigured || !supabaseClient || !navigator.onLine) return false;
@@ -534,6 +600,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      let faceVerificationId = null;
+      if (supabaseConfigured) {
+        if (!navigator.onLine) {
+          if (clockFeedback) clockFeedback.textContent = 'Live face verification needs an internet connection. Clock-in was not recorded.';
+          return;
+        }
+
+        clockButton.disabled = true;
+        if (clockFeedback) clockFeedback.textContent = 'Complete the live face check to confirm your identity.';
+        const verification = await openFaceVerification();
+        clockButton.disabled = false;
+        if (!verification.verificationId) {
+          if (clockFeedback) clockFeedback.textContent = verification.error;
+          return;
+        }
+        faceVerificationId = verification.verificationId;
+        pendingCheckIn.capturedAt = new Date().toISOString();
+        pendingCheckIn.lateByMilliseconds = getLateMilliseconds(new Date(pendingCheckIn.capturedAt));
+        pendingCheckIn.late = pendingCheckIn.lateByMilliseconds > 0;
+      }
+
       if (!navigator.onLine) {
         activeShift = { startedAt: pendingCheckIn.capturedAt, distanceMeters: pendingCheckIn.distanceMeters, late: pendingCheckIn.late, lateByMilliseconds: pendingCheckIn.lateByMilliseconds };
         localStorage.setItem(activeShiftKey, JSON.stringify(activeShift));
@@ -547,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clockButton.disabled = true;
         if (clockFeedback) clockFeedback.textContent = 'Saving your attendance for the admin dashboard...';
         try {
-          supabaseRecordId = await saveAttendanceRemotely(pendingCheckIn, currentUser?.authUserId);
+          supabaseRecordId = await saveAttendanceRemotely({ ...pendingCheckIn, faceVerificationId }, currentUser?.authUserId);
         } catch (error) {
           clockButton.disabled = false;
           if (clockFeedback) clockFeedback.textContent = `Clock-in was not recorded: ${error.message}. Check your connection and try again.`;
@@ -1076,6 +1163,34 @@ document.addEventListener('DOMContentLoaded', () => {
       saveUsers(readUsers().filter((user) => user.id !== id));
       removeButton.closest('tr').remove();
       userFormFeedback.textContent = `${id} was removed.`;
+    });
+  }
+
+  const faceEnrollmentForm = document.querySelector('[data-face-enrollment-form]');
+  if (faceEnrollmentForm) {
+    const faceEnrollmentFeedback = document.querySelector('[data-face-enrollment-feedback]');
+    faceEnrollmentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!supabaseClient || currentRole !== 'admin') {
+        faceEnrollmentFeedback.textContent = 'Admin sign-in and Supabase configuration are required.';
+        return;
+      }
+
+      const submitButton = faceEnrollmentForm.querySelector('[type="submit"]');
+      submitButton.disabled = true;
+      faceEnrollmentFeedback.textContent = 'Uploading approved reference photo securely...';
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('enroll-face-reference', {
+          body: new FormData(faceEnrollmentForm)
+        });
+        if (error) throw new Error(data?.error || error.message);
+        faceEnrollmentFeedback.textContent = `Approved reference photo enrolled for ${data.employeeId}.`;
+        faceEnrollmentForm.reset();
+      } catch (error) {
+        faceEnrollmentFeedback.textContent = `Enrollment failed: ${error.message}`;
+      } finally {
+        submitButton.disabled = false;
+      }
     });
   }
 });

@@ -5,13 +5,31 @@ create table if not exists public.employee_profiles (
   department text,
   branch text not null default 'HQ - Centurion',
   role text not null default 'employee' check (role in ('employee', 'admin')),
+  face_reference_path text,
+  face_enrolled_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+alter table public.employee_profiles add column if not exists face_reference_path text;
+alter table public.employee_profiles add column if not exists face_enrolled_at timestamptz;
 
 create table if not exists public.device_registrations (
   device_id uuid primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
   registered_at timestamptz not null default now()
+);
+
+create table if not exists public.face_verification_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  aws_session_id text not null unique,
+  status text not null default 'pending' check (status in ('pending', 'verified', 'failed', 'consumed')),
+  liveness_confidence double precision,
+  face_match_similarity double precision,
+  expires_at timestamptz not null,
+  verified_at timestamptz,
+  consumed_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.attendance_records (
@@ -31,6 +49,7 @@ create table if not exists public.attendance_records (
   in_bounds boolean not null default false,
   late boolean not null default false,
   late_by_milliseconds bigint not null default 0,
+  face_verification_id uuid references public.face_verification_sessions (id),
   status text not null default 'Present'
     check (status in ('Present', 'Late', 'Completed')),
   created_at timestamptz not null default now()
@@ -44,6 +63,7 @@ create index if not exists attendance_records_user_id_idx
 alter table public.employee_profiles enable row level security;
 alter table public.device_registrations enable row level security;
 alter table public.attendance_records enable row level security;
+alter table public.face_verification_sessions enable row level security;
 
 drop policy if exists "Users can read their own profile" on public.employee_profiles;
 create policy "Users can read their own profile"
@@ -68,10 +88,7 @@ create policy "Employees can read their attendance"
   );
 
 drop policy if exists "Employees can clock in for themselves" on public.attendance_records;
-create policy "Employees can clock in for themselves"
-  on public.attendance_records for insert
-  to authenticated
-  with check (auth.uid() = user_id);
+alter table public.attendance_records add column if not exists face_verification_id uuid references public.face_verification_sessions (id);
 
 drop policy if exists "Employees can clock out their own shift" on public.attendance_records;
 create policy "Employees can clock out their own shift"
@@ -81,7 +98,9 @@ create policy "Employees can clock out their own shift"
   with check (auth.uid() = user_id);
 
 revoke all on public.attendance_records from anon, authenticated;
-grant select, insert, update on public.attendance_records to authenticated;
+grant select on public.attendance_records to authenticated;
+grant update (clocked_out_at, worked_milliseconds, status) on public.attendance_records to authenticated;
+revoke all on public.face_verification_sessions from anon, authenticated;
 
 do $$
 begin
@@ -152,3 +171,84 @@ $$;
 
 revoke all on function public.register_current_device(uuid, text) from public, anon;
 grant execute on function public.register_current_device(uuid, text) to authenticated;
+
+create or replace function public.clock_in_with_face(
+  p_face_verification_id uuid,
+  p_captured_at timestamptz,
+  p_latitude double precision,
+  p_longitude double precision,
+  p_accuracy double precision,
+  p_distance_meters integer,
+  p_in_bounds boolean,
+  p_late boolean,
+  p_late_by_milliseconds bigint
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_profile public.employee_profiles%rowtype;
+  v_verification public.face_verification_sessions%rowtype;
+  v_attendance_id uuid;
+begin
+  if v_user_id is null then
+    raise exception using errcode = '28000', message = 'AUTHENTICATION_REQUIRED';
+  end if;
+
+  select * into v_profile
+  from public.employee_profiles
+  where user_id = v_user_id;
+
+  if not found or v_profile.role <> 'employee' then
+    raise exception using errcode = '42501', message = 'EMPLOYEE_PROFILE_REQUIRED';
+  end if;
+
+  if v_profile.face_reference_path is null then
+    raise exception using errcode = '42501', message = 'FACE_ENROLLMENT_REQUIRED';
+  end if;
+
+  select * into v_verification
+  from public.face_verification_sessions
+  where id = p_face_verification_id
+    and user_id = v_user_id
+  for update;
+
+  if not found
+    or v_verification.status <> 'verified'
+    or v_verification.consumed_at is not null
+    or v_verification.expires_at <= now() then
+    raise exception using errcode = '42501', message = 'FACE_VERIFICATION_INVALID_OR_EXPIRED';
+  end if;
+
+  if p_in_bounds is distinct from true then
+    raise exception using errcode = '42501', message = 'CLOCK_IN_OUTSIDE_APPROVED_RADIUS';
+  end if;
+
+  insert into public.attendance_records (
+    user_id, employee_id, employee_name, department, branch,
+    captured_at, latitude, longitude, accuracy, distance_meters,
+    in_bounds, late, late_by_milliseconds, face_verification_id, status
+  ) values (
+    v_user_id, v_profile.employee_id, v_profile.full_name, v_profile.department, v_profile.branch,
+    p_captured_at, p_latitude, p_longitude, p_accuracy, p_distance_meters,
+    p_in_bounds, p_late, p_late_by_milliseconds, p_face_verification_id,
+    case when p_late then 'Late' else 'Present' end
+  ) returning id into v_attendance_id;
+
+  update public.face_verification_sessions
+  set status = 'consumed', consumed_at = now()
+  where id = p_face_verification_id;
+
+  return v_attendance_id;
+end;
+$$;
+
+revoke all on function public.clock_in_with_face(uuid, timestamptz, double precision, double precision, double precision, integer, boolean, boolean, bigint) from public, anon;
+grant execute on function public.clock_in_with_face(uuid, timestamptz, double precision, double precision, double precision, integer, boolean, boolean, bigint) to authenticated;
+
+insert into storage.buckets (id, name, public)
+values ('face-references', 'face-references', false)
+on conflict (id) do update set public = false;
